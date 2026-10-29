@@ -172,6 +172,13 @@ est valide, mais il **n'a été installé sur aucun appareil**, ni émulateur
 (images système Android indisponibles ici). L'APK officiel est produit par
 Gradle (section 7).
 
+## 6. Performances
+
+Aucune mesure n'est représentative d'un Fire TV : le rendu logiciel
+(SwiftShader) donne environ 10 images/s en 1920 × 1080 sur le processeur du
+conteneur. **Aucune fréquence d'images n'est garantie.** Mesures à faire sur
+l'appareil (voir ci-dessous).
+
 ## 7. Intégration continue GitHub Actions
 
 Première exécution du workflow « Construction » (run n° 1, 29 octobre 2026,
@@ -190,13 +197,6 @@ par GitHub) ; sans effet sur le résultat.
 L'APK produit par GitHub n'a pas pu être inspecté depuis l'environnement de
 développement (stockage des artefacts inaccessible) et n'a été installé sur
 aucun appareil.
-
-## 6. Performances
-
-Aucune mesure n'est représentative d'un Fire TV : le rendu logiciel
-(SwiftShader) donne environ 10 images/s en 1920 × 1080 sur le processeur du
-conteneur. **Aucune fréquence d'images n'est garantie.** Mesures à faire sur
-l'appareil (voir ci-dessous).
 
 ## Ce qui reste à vérifier sur le Fire TV réel
 
