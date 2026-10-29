@@ -11,6 +11,8 @@ export interface Settings {
   clouds: boolean;
   ambientMotion: boolean;
   labels: boolean;
+  /** Affiche la cadence d'images et la résolution (diagnostic sur l'appareil). */
+  showFps: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   clouds: true,
   ambientMotion: true,
   labels: true,
+  showFps: false,
 };
 
 export interface SettingEntry {
@@ -45,6 +48,7 @@ export const SETTINGS_ENTRIES: readonly SettingEntry[] = [
   { key: 'clouds', label: 'Nuages sur la Terre', values: [true, false], describe: yesNo },
   { key: 'ambientMotion', label: 'Mouvement lent de la caméra', values: [true, false], describe: yesNo },
   { key: 'labels', label: 'Noms des planètes', values: [true, false], describe: yesNo },
+  { key: 'showFps', label: 'Afficher la cadence (diagnostic)', values: [false, true], describe: yesNo },
 ];
 
 /** Passe à la valeur suivante (ou précédente) d'un réglage, en boucle. */

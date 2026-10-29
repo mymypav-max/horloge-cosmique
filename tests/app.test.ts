@@ -36,7 +36,8 @@ describe('réglages', () => {
     expect(s.quality).toBe('high');
     s = cycleSetting(s, 1, 1);
     expect(s.clouds).toBe(false);
-    expect(SETTINGS_ENTRIES.length).toBe(4);
+    expect(SETTINGS_ENTRIES.length).toBe(5);
+    expect(DEFAULT_SETTINGS.showFps).toBe(false);
   });
 });
 

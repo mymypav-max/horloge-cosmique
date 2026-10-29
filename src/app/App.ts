@@ -99,6 +99,19 @@ export class App {
     this.bindLifecycle();
     this.refreshNavigationUi();
     if (options.debug) this.installDebug();
+    this.setFpsVisible(options.debug || settings.showFps);
+  }
+
+  /** Affiche ou masque l'indicateur de cadence (réglage de diagnostic). */
+  private setFpsVisible(visible: boolean): void {
+    if (visible && !this.debugEl) {
+      this.debugEl = document.createElement('div');
+      this.debugEl.className = 'debug';
+      document.body.appendChild(this.debugEl);
+    } else if (!visible && this.debugEl && !this.options.debug) {
+      this.debugEl.remove();
+      this.debugEl = null;
+    }
   }
 
   start(): void {
@@ -268,6 +281,7 @@ export class App {
     saveSettings(this.settings);
     this.view.graph.earth.setClouds(this.settings.clouds);
     this.rig.ambientMotion = this.settings.ambientMotion;
+    this.setFpsVisible(this.settings.showFps);
     if (this.settings.quality !== previous.quality) {
       this.overlay.showToast('Nouvelle qualité appliquée au prochain démarrage… redémarrage');
       window.setTimeout(() => window.location.reload(), 1600);
@@ -476,9 +490,6 @@ export class App {
   }
 
   private installDebug(): void {
-    this.debugEl = document.createElement('div');
-    this.debugEl.className = 'debug';
-    document.body.appendChild(this.debugEl);
     (window as unknown as Record<string, unknown>).__horlogeCosmique = {
       state: () => ({
         nav: this.nav,
