@@ -142,7 +142,8 @@ aucune erreur.
 | `npm run build` | ✅ `dist/` : 3,7 Mo dont JavaScript 684 Ko (196 Ko compressé), textures 2,8 Mo |
 | Syntaxe du JavaScript produit | ✅ analysable en ES2018 (Chromium ≥ 64) ; pas d'ES2019+ |
 | Wrapper Gradle (`android/gradlew`) | ✅ télécharge Gradle 8.11.1, somme SHA-256 vérifiée, projet analysé |
-| `./gradlew assembleDebug` | ❌ **non exécutable ici** : le plugin Android Gradle 8.7.3 n'est publié que sur maven.google.com, inaccessible (refus du proxy réseau). À faire sur PC ou via GitHub Actions |
+| `./gradlew assembleDebug` dans l'environnement de développement | ❌ **non exécutable** : le plugin Android Gradle 8.7.3 n'est publié que sur maven.google.com, inaccessible (refus du proxy réseau) |
+| `./gradlew assembleRelease` sur GitHub Actions | ✅ réussi (voir section 7) |
 | APK de vérification (chaîne alternative) | ✅ voir ci-dessous |
 
 ### APK de vérification
@@ -168,8 +169,27 @@ taille : 3,4 Mo (assets/www/ = application web complète, classes.dex = 10,8 Ko)
 
 Cet APK prouve que le code Java compile contre l'API 35 et que le manifeste
 est valide, mais il **n'a été installé sur aucun appareil**, ni émulateur
-(images système Android indisponibles ici). L'APK officiel doit être produit
-par Gradle.
+(images système Android indisponibles ici). L'APK officiel est produit par
+Gradle (section 7).
+
+## 7. Intégration continue GitHub Actions
+
+Première exécution du workflow « Construction » (run n° 1, 29 octobre 2026,
+commit `d565d14`) : **réussie**.
+
+| Job | Résultat |
+|---|---|
+| Tests et application web | ✅ `npm ci`, vérification des types, 143 tests unitaires, compilation, vérification de bout en bout **22/22** (Chromium sur le serveur GitHub, environ 18 i/s en rendu logiciel) |
+| APK Android (Fire TV) | ✅ `./gradlew assembleRelease` avec JDK 17 : `BUILD SUCCESSFUL in 1m 11s`, 44 tâches, contrôle `lintVitalRelease` sans erreur ; APK signé avec une clé de débogage propre à l'exécution (aucune clé personnelle configurée) |
+
+Artefacts produits : `horloge-cosmique-apk` (APK, 3,3 Mo compressé),
+`application-web`, `resultats-e2e` (captures). Seul avertissement : les actions
+GitHub en version 4 utilisent Node.js 20, déprécié (exécutées sous Node.js 24
+par GitHub) ; sans effet sur le résultat.
+
+L'APK produit par GitHub n'a pas pu être inspecté depuis l'environnement de
+développement (stockage des artefacts inaccessible) et n'a été installé sur
+aucun appareil.
 
 ## 6. Performances
 
@@ -183,8 +203,8 @@ l'appareil (voir ci-dessous).
 À faire lors de la première installation (modèle exact : *Paramètres › Ma
 Fire TV › À propos*) :
 
-1. [ ] Compilation de l'APK avec Android Studio ou `./gradlew assembleDebug`
-   (ou exécution du workflow GitHub Actions).
+1. [x] Compilation de l'APK par GitHub Actions (réussie). [ ] Compilation sur
+   votre PC avec Android Studio ou `./gradlew assembleDebug`.
 2. [ ] Installation (ADB ou Downloader) ; icône et bannière visibles dans
    *Vos applications et chaînes*.
 3. [ ] Démarrage : chargement des textures, pas d'écran noir ni de message

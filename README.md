@@ -47,8 +47,8 @@ pour l'heure qu'il est**.
 | Application web (TypeScript, Vite, Three.js) | ✅ fonctionnelle, testée dans Chromium |
 | Modèle astronomique | ✅ 143 tests unitaires, comparé à une bibliothèque de référence |
 | Vérification de bout en bout (rendu, navigation, terminateur) | ✅ 22/22 contrôles dans Chromium (WebGL logiciel) |
-| Projet Android (WebView) pour Fire TV | ✅ code complet ; APK de vérification compilé et signé avec une chaîne d'outils alternative |
-| Compilation de l'APK avec Gradle / Android Studio | ⚠️ non exécutée ici (serveurs Google bloqués dans l'environnement de développement) : à faire sur PC ou par l'intégration continue GitHub |
+| Projet Android (WebView) pour Fire TV | ✅ code complet, compilé et signé |
+| Compilation de l'APK avec Gradle | ✅ réussie par l'intégration continue GitHub (plugin Android 8.7.3, Gradle 8.11.1) ; APK téléchargeable dans l'onglet *Actions* |
 | Essai sur un vrai Fire TV Stick | ❌ non réalisé (aucun appareil disponible) — voir [la liste des vérifications restantes](docs/TESTS.md#ce-qui-reste-à-vérifier-sur-le-fire-tv-réel) |
 
 Détail des résultats : [docs/TESTS.md](docs/TESTS.md).

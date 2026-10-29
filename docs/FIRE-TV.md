@@ -4,13 +4,11 @@ L'application Android (`android/`) est une enveloppe minimale : une WebView
 plein écran qui affiche l'application web compilée (`dist/`), embarquée dans
 l'APK. Elle ne nécessite ni compte Amazon ni publication sur l'Amazon Appstore.
 
-> **État de vérification** : le projet Android n'a **pas** pu être compilé avec
-> Gradle dans l'environnement de développement (serveurs de Google bloqués), et
-> **aucun essai n'a été fait sur un vrai Fire TV**. Un APK de vérification a été
-> produit avec une autre chaîne d'outils (voir docs/TESTS.md) : le code Java
-> compile, l'APK est valide, signé et déclaré comme application Fire TV
-> (Leanback). Les procédures ci-dessous sont celles d'Android Studio et du
-> Fire TV ; elles restent à dérouler une première fois sur votre matériel.
+> **État de vérification** : l'APK est compilé avec succès par l'intégration
+> continue GitHub (Gradle, plugin Android 8.7.3), mais **aucun essai n'a été
+> fait sur un vrai Fire TV** ni dans Android Studio. Les procédures ci-dessous
+> sont celles d'Android Studio et du Fire TV ; elles restent à dérouler une
+> première fois sur votre matériel (voir docs/TESTS.md).
 
 ## Compatibilité
 
@@ -126,8 +124,9 @@ Sans clé personnelle enregistrée dans les secrets du dépôt
 `HC_KEY_PASSWORD`), chaque compilation utilise une clé de débogage différente :
 il faut alors désinstaller l'ancienne version avant d'installer la nouvelle.
 
-> Ce workflow n'a pas encore été exécuté (il le sera au premier envoi sur
-> GitHub).
+> Première exécution le 29 octobre 2026 : tests, vérification de bout en bout
+> et compilation de l'APK réussis. Le joint aux releases n'a pas encore servi
+> (aucune release publiée).
 
 ## 3. Préparer le Fire TV
 
