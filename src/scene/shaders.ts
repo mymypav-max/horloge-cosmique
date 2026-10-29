@@ -38,6 +38,10 @@ uniform float ambient;
 uniform vec3 rimColor;
 uniform float rimStrength;
 uniform float opacity;
+// Fraction de lumière solaire reçue (1 sauf satellite dans l'ombre de sa planète).
+uniform float sunLight;
+// Lumière rougeâtre réfractée par l'atmosphère de la planète dans son ombre (Lune éclipsée), sinon nulle.
+uniform vec3 shadowTint;
 varying vec2 vUv;
 varying vec3 vNormalW;
 varying vec3 vPosW;
@@ -49,9 +53,9 @@ void main() {
   vec3 albedo = hasMap > 0.5 ? toLinear(texture2D(map, vUv).rgb) : toLinear(fallbackColor);
   // Terminateur adouci (enroulement de 0,06) : évite un bord trop dur.
   float diffuse = clamp((ndl + 0.06) / 1.06, 0.0, 1.0);
-  vec3 color = albedo * (ambient + 1.25 * diffuse);
+  vec3 color = albedo * (ambient + 1.25 * diffuse * sunLight) + albedo * shadowTint * (1.0 - sunLight) * diffuse;
   float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-  color += rimColor * fresnel * rimStrength * smoothstep(-0.2, 0.5, ndl);
+  color += rimColor * fresnel * rimStrength * smoothstep(-0.2, 0.5, ndl) * sunLight;
   gl_FragColor = vec4(toSRGB(color), opacity);
 }
 `;
@@ -221,5 +225,37 @@ void main() {
   float r = length(d) * 2.0;
   float a = 1.0 - smoothstep(0.25, 1.0, r);
   gl_FragColor = vec4(vColor * a, 1.0);
+}
+`;
+
+/**
+ * Maquette de l'ISS : couleur par sommet (attribut « tint »), éclairage
+ * diffuse par la direction réelle du Soleil, faces vues des deux côtés
+ * (panneaux minces).
+ */
+export const ISS_VERTEX = /* glsl */ `
+attribute vec3 tint;
+varying vec3 vTint;
+varying vec3 vNormalW;
+void main() {
+  vTint = tint;
+  vNormalW = normalize(mat3(modelMatrix) * normal);
+  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+}
+`;
+
+export const ISS_FRAGMENT = /* glsl */ `
+uniform vec3 sunDir;
+uniform float opacity;
+uniform float sunLight;
+varying vec3 vTint;
+varying vec3 vNormalW;
+${COMMON}
+void main() {
+  vec3 N = normalize(vNormalW);
+  if (!gl_FrontFacing) N = -N;
+  float diffuse = max(dot(N, sunDir), 0.0);
+  vec3 color = toLinear(vTint) * (0.05 + 1.3 * diffuse * sunLight);
+  gl_FragColor = vec4(toSRGB(color), opacity);
 }
 `;

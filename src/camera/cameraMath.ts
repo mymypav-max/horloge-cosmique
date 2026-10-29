@@ -136,3 +136,50 @@ export function overviewDistance(radius: number, fovY: number, aspect: number, e
   const dV = (radius * Math.sin(elevation) * 1.25) / tanV + radius * 0.5;
   return Math.max(dH, dV);
 }
+
+/**
+ * Interpolation de deux poses en tournant autour d'un pivot (centre d'une
+ * planète) : la direction vue du pivot suit un arc de grand cercle et la
+ * distance au pivot varie linéairement. Si les deux poses sont hors d'une
+ * sphère centrée sur le pivot, tout le trajet l'est aussi : la caméra ne
+ * traverse jamais la planète (contrairement à une interpolation en ligne
+ * droite).
+ */
+export function interpolatePoseAround(a: CameraPose, b: CameraPose, pivot: Vec3, t: number): CameraPose {
+  const ra: Vec3 = [a.position[0] - pivot[0], a.position[1] - pivot[1], a.position[2] - pivot[2]];
+  const rb: Vec3 = [b.position[0] - pivot[0], b.position[1] - pivot[1], b.position[2] - pivot[2]];
+  const da = Math.hypot(ra[0], ra[1], ra[2]);
+  const db = Math.hypot(rb[0], rb[1], rb[2]);
+  const ua = normalize(ra);
+  const ub = normalize(rb);
+  const cosTheta = Math.max(-1, Math.min(1, dot(ua, ub)));
+  const theta = Math.acos(cosTheta);
+  let u: Vec3;
+  if (theta < 1e-6) {
+    u = ua;
+  } else if (Math.sin(theta) < 1e-3) {
+    // Directions opposées : arc passant par une direction perpendiculaire quelconque.
+    let perp = cross(ua, a.up);
+    if (Math.hypot(perp[0], perp[1], perp[2]) < 1e-6) perp = cross(ua, [1, 0, 0]);
+    perp = normalize(perp);
+    u = add(scale(ua, Math.cos(theta * t)), scale(perp, Math.sin(theta * t)));
+  } else {
+    const s = Math.sin(theta);
+    u = add(scale(ua, Math.sin((1 - t) * theta) / s), scale(ub, Math.sin(t * theta) / s));
+  }
+  const d = lerp(da, db, t);
+  const up = normalize(lerpVec(a.up, b.up, t));
+  return {
+    position: add(pivot, scale(u, d)),
+    target: lerpVec(a.target, b.target, t),
+    up: Math.hypot(...up) > 0 ? up : b.up,
+  };
+}
+
+/** Repousse la caméra hors d'une sphère (centre, rayon) en conservant sa direction vue du centre. */
+export function keepOutsideSphere(pose: CameraPose, center: Vec3, radius: number): CameraPose {
+  const r: Vec3 = [pose.position[0] - center[0], pose.position[1] - center[1], pose.position[2] - center[2]];
+  const d = Math.hypot(r[0], r[1], r[2]);
+  if (d >= radius || d === 0) return pose;
+  return { ...pose, position: add(center, scale(r, radius / d)) };
+}

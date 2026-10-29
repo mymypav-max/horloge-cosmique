@@ -22,7 +22,7 @@ import { bodyPoleEcliptic } from './bodyRotation';
 import { equatorialJ2000ToEcliptic } from './frames';
 import { solveKepler } from './kepler';
 import { DEG, type Vec3, angleBetween, cross, mulVec, normalize, scale } from './math';
-import { MOON_SIDEREAL_PERIOD_DAYS, geocentricMoon } from './moon';
+import { MOON_SIDEREAL_PERIOD_DAYS, geocentricMoon, lunarMeanDirection } from './moon';
 import { daysTT } from './time';
 
 /** Lunes dont l'orbite est ajustée sur JPL Horizons (toutes sauf la Lune). */
@@ -64,9 +64,10 @@ function referenceBasis(raDeg: number, decDeg: number): [Vec3, Vec3, Vec3] {
   return [x, cross(z, x), z];
 }
 
-const BASES = Object.fromEntries(
-  Object.entries(FITTED_ORBITS).map(([id, o]) => [id, referenceBasis(o.poleRaDeg, o.poleDecDeg)]),
-) as Record<FittedMoonId, [Vec3, Vec3, Vec3]>;
+const BASES = {} as Record<FittedMoonId, [Vec3, Vec3, Vec3]>;
+for (const id of Object.keys(FITTED_ORBITS) as FittedMoonId[]) {
+  BASES[id] = referenceBasis(FITTED_ORBITS[id].poleRaDeg, FITTED_ORBITS[id].poleDecDeg);
+}
 
 export interface MoonElements {
   aKm: number;
@@ -198,4 +199,38 @@ export function isWithinMoonFitSpan(utcMs: number): boolean {
 /** Écart angulaire maximal (°) au modèle JPL sur 2010–2030, vu de la planète. */
 export function moonFitMaxAngleDeg(id: FittedMoonId): number {
   return FITTED_ORBITS[id].fit.maxAngleDeg;
+}
+
+/**
+ * Axes du corps d'une lune en rotation synchrone (écliptique J2000) :
+ * - `toParent` : direction de la planète vue depuis la « lune moyenne »
+ *   (mouvement uniforme), qui définit le méridien origine des lunes
+ *   synchrones ; la face visible oscille donc légèrement (libration optique
+ *   en longitude) comme dans la réalité ;
+ * - `north` : pôle nord au sens de l'UAI (du côté nord du plan invariable,
+ *   assimilé ici à l'écliptique), pris perpendiculaire au plan de l'orbite.
+ * Simplification documentée : l'inclinaison réelle de l'axe de rotation sur
+ * l'orbite (1,5° pour la Lune) et la libration physique sont négligées.
+ */
+export function moonBodyAxes(id: MoonId, utcMs: number): { toParent: Vec3; north: Vec3 } {
+  const normal = moonOrbitNormal(id, utcMs);
+  const north = normal[2] >= 0 ? normal : scale(normal, -1);
+  let mean: Vec3;
+  if (id === 'moon') {
+    mean = lunarMeanDirection(utcMs);
+  } else {
+    const el = fittedElements(id, utcMs);
+    // Lune moyenne : longitude dans l'orbite ω + M (au lieu de ω + anomalie vraie).
+    const u = el.argPeri + el.M;
+    const cO = Math.cos(el.node);
+    const sO = Math.sin(el.node);
+    const ci = Math.cos(el.i);
+    const r: Vec3 = [cO * Math.cos(u) - sO * Math.sin(u) * ci, sO * Math.cos(u) + cO * Math.sin(u) * ci, Math.sin(u) * Math.sin(el.i)];
+    const [bx, by, bz] = BASES[id];
+    mean = mulVec(EQJ_TO_ECL, [bx[0] * r[0] + by[0] * r[1] + bz[0] * r[2], bx[1] * r[0] + by[1] * r[1] + bz[1] * r[2], bx[2] * r[0] + by[2] * r[1] + bz[2] * r[2]]);
+  }
+  // Direction de la planète, rendue perpendiculaire à l'axe nord.
+  const toParent = scale(mean, -1);
+  const k = toParent[0] * north[0] + toParent[1] * north[1] + toParent[2] * north[2];
+  return { toParent: normalize([toParent[0] - k * north[0], toParent[1] - k * north[1], toParent[2] - k * north[2]]), north };
 }

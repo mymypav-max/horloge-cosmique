@@ -10,6 +10,7 @@ import { type BodyLayout, layoutBodies, layoutSunOrientation } from '../represen
 import { EarthBody, PlanetBody, SunBody } from './bodies';
 import { makeFocusRingTexture } from './glowTexture';
 import { Orbits } from './orbits';
+import { SatelliteSystem } from './satellites';
 import { createStarfield } from './starfield';
 import type { TextureSet } from './textures';
 
@@ -22,6 +23,7 @@ export class SceneGraph {
   readonly planets: Record<PlanetId, PlanetBody>;
   readonly earth: EarthBody;
   readonly orbits = new Orbits();
+  readonly satellites: SatelliteSystem;
   readonly stars;
   readonly focusRing: Sprite;
   layout: Record<PlanetId, BodyLayout> | null = null;
@@ -46,6 +48,9 @@ export class SceneGraph {
       this.scene.add(body.root);
     }
     this.planets = planets;
+
+    this.satellites = new SatelliteSystem(quality);
+    this.scene.add(this.satellites.group);
 
     this.focusRing = new Sprite(
       new SpriteMaterial({
@@ -75,14 +80,29 @@ export class SceneGraph {
   }
 
   /**
-   * Estompe tout sauf la planète observée (fade = 0 : vue générale,
-   * fade = 1 : vue rapprochée, seuls la planète et les étoiles restent).
+   * Estompe les autres planètes et leurs orbites (fade = 0 : vue générale,
+   * fade = 1 : vue rapprochée, où seuls la planète observée, ses satellites,
+   * le Soleil — à sa taille apparente réelle — et les étoiles restent).
    */
   setDetailFade(subject: PlanetId | null, fade: number): void {
     const others = 1 - fade;
     for (const id of PLANET_IDS) this.planets[id].setOpacity(id === subject ? 1 : others);
-    this.sun.setOpacity(others);
     this.orbits.setOpacityScale(others);
+  }
+
+  /** Taille d'affichage du Soleil (vue générale : taille fixe ; vues rapprochées : taille apparente réelle). */
+  setSunDisplaySize(radius: number, glowDiameter: number): void {
+    this.sun.setDisplaySize(radius, glowDiameter);
+  }
+
+  /** Distance de la caméra à la surface la plus proche (planètes et satellites affichés). */
+  nearestSurfaceDistance(camera: Vector3): number {
+    let nearest = Infinity;
+    for (const body of Object.values(this.planets)) {
+      if (!body.root.visible) continue;
+      nearest = Math.min(nearest, body.root.position.distanceTo(camera) - body.radius * 2.4);
+    }
+    return Math.min(nearest, this.satellites.nearestSurfaceDistance(camera));
   }
 
   planetPosition(id: PlanetId, target = new Vector3()): Vector3 {

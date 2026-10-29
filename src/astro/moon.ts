@@ -70,6 +70,14 @@ export function geocentricMoon(utcMs: number): Vec3 {
   return mulVec(toJ2000, ofDate);
 }
 
+/** Direction (unitaire, écliptique J2000) de la « Lune moyenne » : longitude moyenne, latitude nulle. */
+export function lunarMeanDirection(utcMs: number): Vec3 {
+  const T = centuriesTT(utcMs);
+  const meanLon = (218.32 + 481267.881 * T) * DEG;
+  const toJ2000 = mulMat(rotX(OBLIQUITY_J2000_RAD), mulMat(inversePrecessionMatrix(T), rotX(-meanObliquity(T))));
+  return mulVec(toJ2000, fromSpherical(meanLon, 0));
+}
+
 /**
  * Révolution sidérale moyenne (jours) : la longitude moyenne avance de
  * 481 267,881° par siècle par rapport à l'équinoxe de la date, dont 1,397°

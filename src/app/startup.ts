@@ -5,17 +5,21 @@
  *   ?t=2024-06-20T20:51:00Z   démarre une simulation à cet instant (en pause)
  *   &vitesse=3600             démarre la simulation à ×3600 (au lieu de la pause)
  *   &vue=terre                ouvre directement la vue rapprochée d'une planète
+ *   &satellite=lune           puis celle d'un de ses satellites (lune, io, titan, iss…)
  *   &qualite=economy|standard|high   force un niveau de qualité
  *   &debug=1                  affiche la cadence et expose une API de test
  */
 
+import { MOON_IDS, MOONS } from '../data/moons';
 import { PLANET_IDS, PLANETS, type PlanetId } from '../data/planets';
 import type { QualityLevel } from '../perf/quality';
+import type { SatelliteId } from '../representation/satellites';
 
 export interface StartupOptions {
   startTime: number | null;
   startRate: number | null;
   view: PlanetId | null;
+  satellite: SatelliteId | null;
   quality: QualityLevel | null;
   debug: boolean;
 }
@@ -38,12 +42,19 @@ export function parseStartupOptions(search: string): StartupOptions {
     const wanted = normalizeName(viewParam);
     view = PLANET_IDS.find((id) => id === wanted || normalizeName(PLANETS[id].name) === wanted) ?? null;
   }
+  const satParam = params.get('satellite') ?? params.get('lune');
+  let satellite: SatelliteId | null = null;
+  if (satParam) {
+    const wanted = normalizeName(satParam);
+    satellite = wanted === 'iss' ? 'iss' : (MOON_IDS.find((id) => id === wanted || normalizeName(MOONS[id].name) === wanted) ?? null);
+  }
   const q = params.get('qualite') ?? params.get('quality');
   const quality = q === 'economy' || q === 'standard' || q === 'high' ? q : null;
   return {
     startTime: Number.isFinite(parsedTime) ? parsedTime : null,
     startRate: Number.isFinite(rate) && rate > 0 ? rate : null,
     view,
+    satellite,
     quality,
     debug: params.get('debug') === '1',
   };

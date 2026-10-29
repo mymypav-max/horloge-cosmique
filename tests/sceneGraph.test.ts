@@ -77,12 +77,12 @@ describe('scène 3D', () => {
     expect(tiltFromEclipticPole).toBeLessThan(30);
   });
 
-  it('estompe les autres corps en vue rapprochée', () => {
+  it('estompe les autres planètes en vue rapprochée, mais garde le Soleil (taille apparente réelle, V2)', () => {
     const g = graphAt(Date.UTC(2026, 9, 29));
     g.setDetailFade('earth', 1);
     expect(g.planets.earth.root.visible).toBe(true);
     expect(g.planets.mars.root.visible).toBe(false);
-    expect(g.sun.root.visible).toBe(false);
+    expect(g.sun.root.visible).toBe(true);
     g.setDetailFade(null, 0);
     expect(g.planets.mars.root.visible).toBe(true);
     expect(g.sun.root.visible).toBe(true);

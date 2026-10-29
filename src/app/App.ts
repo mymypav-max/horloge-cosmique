@@ -6,7 +6,9 @@
 import { Vector3 } from 'three';
 import { computeAstroState, type AstroState } from '../astro/state';
 import { solarElevationCosine } from '../astro/earth';
+import { issState, issValidity } from '../astro/iss';
 import { CameraRig } from '../camera/CameraRig';
+import { MOONS, MOONS_BY_PLANET, type MoonId } from '../data/moons';
 import { PLANETS, PLANET_IDS, type PlanetId } from '../data/planets';
 import { REGIONS } from '../data/regions';
 import { actionFromKey } from '../input/keymap';
@@ -21,14 +23,16 @@ import {
 import { AdaptiveResolution, FrameScheduler } from '../perf/FrameScheduler';
 import type { QualityPreset } from '../perf/quality';
 import { exitApp, installAndroidBridge, isAndroidApp } from '../platform/android';
+import type { SatelliteId } from '../representation/satellites';
 import { ASTRO_TO_SCENE } from '../representation/sceneFrame';
+import { displayedSunGlow, displayedSunRadius } from '../representation/sunScale';
 import type { SceneView } from '../scene/SceneView';
 import { TimeController } from '../time/TimeController';
 import { describeRate, formatNumber, formatRate } from '../ui/format';
-import { Overlay } from '../ui/Overlay';
+import { type SatelliteLabel, Overlay } from '../ui/Overlay';
 import { geoToEarthFixed } from '../astro/earth';
 import { mulVec } from '../astro/math';
-import { planetInfo } from './info';
+import { issInfo, issValidityText, moonInfo, moonSubtitle, planetInfo } from './info';
 import { SETTINGS_ENTRIES, type Settings, cycleSetting, saveSettings } from './settings';
 import type { StartupOptions } from './startup';
 
@@ -45,6 +49,9 @@ const HINTS = {
   detail:
     '<kbd>◀</kbd><kbd>▶</kbd><kbd>▲</kbd><kbd>▼</kbd> Pivoter · <kbd>◂◂</kbd><kbd>▸▸</kbd> Zoom · <kbd>OK</kbd> Commandes · <kbd>Retour</kbd> Vue générale',
   regions: '<kbd>▲</kbd><kbd>▼</kbd> Choisir · <kbd>OK</kbd> Centrer · <kbd>Retour</kbd> Fermer',
+  satellites: '<kbd>▲</kbd><kbd>▼</kbd> Choisir · <kbd>OK</kbd> Observer · <kbd>Retour</kbd> Fermer',
+  satellite: (parent: string) =>
+    `<kbd>◀</kbd><kbd>▶</kbd><kbd>▲</kbd><kbd>▼</kbd> Pivoter · <kbd>◂◂</kbd><kbd>▸▸</kbd> Zoom · <kbd>OK</kbd> Commandes · <kbd>Retour</kbd> ${parent}`,
   settings: '<kbd>▲</kbd><kbd>▼</kbd> Choisir · <kbd>◀</kbd><kbd>▶</kbd> Modifier · <kbd>Retour</kbd> Fermer',
 };
 
@@ -69,6 +76,9 @@ export class App {
   private frameCount = 0;
   private fpsWindowStart = 0;
   private measuredFps = 0;
+  /** Satellite à ouvrir au démarrage (paramètre d'adresse), une fois la vue de la planète prête. */
+  private pendingSatellite: SatelliteId | null = null;
+  private sunRadius = 0;
 
   constructor(
     readonly view: SceneView,
@@ -120,6 +130,8 @@ export class App {
     if (this.options.view) {
       this.nav = { ...this.nav, focused: this.options.view };
       this.dispatch('ok');
+      const wanted = this.options.satellite;
+      if (wanted && this.satellitesFor(this.options.view).includes(wanted)) this.pendingSatellite = wanted;
     }
     this.scheduler.start();
   }
@@ -190,9 +202,21 @@ export class App {
     this.lastInteraction = performance.now();
   }
 
+  /** Satellites proposés pour une planète : ses lunes, et l'ISS pour la Terre si des données valables existent. */
+  satellitesFor(planet: PlanetId | null): SatelliteId[] {
+    if (!planet) return [];
+    const list: SatelliteId[] = [...MOONS_BY_PLANET[planet]];
+    if (planet === 'earth' && issValidity(this.time.now()).status !== 'unavailable') list.push('iss');
+    return list;
+  }
+
   dispatch(action: Action): void {
     this.touch();
-    const result = reduceNavigation(this.nav, action, { now: performance.now(), settingsCount: SETTINGS_ENTRIES.length });
+    const result = reduceNavigation(this.nav, action, {
+      now: performance.now(),
+      settingsCount: SETTINGS_ENTRIES.length,
+      satellites: this.satellitesFor(this.nav.detail),
+    });
     const viewChanged = result.state.view !== this.nav.view;
     this.nav = result.state;
     for (const effect of result.effects) this.dispatchEffect(effect);
@@ -207,8 +231,30 @@ export class App {
       case 'openPlanet':
         if (layouts) this.rig.openPlanet(layouts[effect.id], now);
         this.view.graph.orbits.setFocus(effect.id, true);
+        this.view.graph.satellites.activate(effect.id);
         this.lastInfoUpdate = 0;
         break;
+      case 'openSatellite': {
+        const sat = this.view.graph.satellites.layouts[effect.id];
+        const parent = layouts && this.nav.detail ? layouts[this.nav.detail] : null;
+        if (sat && parent) {
+          this.rig.openSatellite(sat, parent, now);
+          this.lastInfoUpdate = 0;
+        } else {
+          this.nav = { ...this.nav, satellite: null };
+          this.overlay.showToast('Ce satellite n’est pas affichable pour l’instant');
+        }
+        break;
+      }
+      case 'closeSatellite':
+        if (layouts && this.nav.detail) this.rig.closeSatellite(layouts[this.nav.detail], now);
+        this.lastInfoUpdate = 0;
+        break;
+      case 'sunView': {
+        const sat = this.rig.satellite ? this.view.graph.satellites.layouts[this.rig.satellite] ?? null : null;
+        if (layouts && this.nav.detail) this.rig.sunView(layouts[this.nav.detail], sat, now);
+        break;
+      }
       case 'closePlanet':
         this.rig.closePlanet(now);
         this.overlay.setInfo(null);
@@ -219,12 +265,19 @@ export class App {
       case 'time':
         this.applyTimeOp(effect.op);
         break;
-      case 'zoom':
-        if (layouts && this.nav.detail && this.rig.mode === 'detail') this.rig.zoom(effect.direction, layouts[this.nav.detail]);
+      case 'zoom': {
+        if (!layouts || !this.nav.detail) break;
+        if (this.rig.mode === 'detail') this.rig.zoom(effect.direction, layouts[this.nav.detail]);
+        const sat = this.rig.satellite ? this.view.graph.satellites.layouts[this.rig.satellite] : null;
+        if (this.rig.mode === 'satellite' && sat) this.rig.zoom(effect.direction, layouts[this.nav.detail], sat);
         break;
-      case 'recenter':
-        if (layouts && this.nav.detail) this.rig.recenter(layouts[this.nav.detail], now);
+      }
+      case 'recenter': {
+        const sat = this.rig.satellite ? this.view.graph.satellites.layouts[this.rig.satellite] : null;
+        if (sat) this.rig.recenterSatellite(sat, now);
+        else if (layouts && this.nav.detail) this.rig.recenter(layouts[this.nav.detail], now);
         break;
+      }
       case 'centerRegion': {
         const region = REGIONS.find((r) => r.id === effect.regionId);
         if (region && layouts) {
@@ -289,7 +342,23 @@ export class App {
   }
 
   private refreshNavigationUi(): void {
-    this.overlay.renderNavigation(this.nav, this.time.isPaused(), this.settings);
+    const planet = this.nav.detail;
+    const entries = this.satellitesFor(planet).map((id) => ({
+      id,
+      name: id === 'iss' ? 'ISS · station spatiale' : MOONS[id as MoonId].name,
+      detail: id === 'iss' ? this.issListDetail() : undefined,
+    }));
+    const title = planet === 'earth' ? 'Satellites de la Terre' : planet ? `Lunes ${/^[AEIOUÉ]/.test(PLANETS[planet].name) ? 'd’' : 'de '}${PLANETS[planet].name}` : '';
+    this.overlay.renderNavigation(this.nav, this.time.isPaused(), this.settings, {
+      title,
+      entries,
+      parentName: planet ? PLANETS[planet].name : '',
+    });
+  }
+
+  private issListDetail(): string | undefined {
+    const v = issValidity(this.time.now());
+    return v.status === 'nominal' ? undefined : issValidityText(v);
   }
 
   // ---------------------------------------------------------- Boucle
@@ -331,14 +400,25 @@ export class App {
       v = (held('up') ? 1 : 0) - (held('down') ? 1 : 0);
     }
     this.rig.setRotationInput(h, v);
-    this.rig.update(dt, now, this.view.aspect, this.view.graph.layout);
 
     // Vue rapprochée : on estompe les autres corps et on décale le cadrage
     // pour laisser la place au panneau d'informations.
     const progress = this.rig.detailProgress(now);
     const fade = progress <= 0.15 ? 0 : progress >= 0.75 ? 1 : (progress - 0.15) / 0.6;
-    this.view.graph.setDetailFade(this.rig.subject, fade);
+
+    // Satellites de la planète observée : positions recalculées à chaque image (mouvement fluide), avant la caméra qui les suit.
+    this.checkIssAvailability(time.simMs);
+    const graph = this.view.graph;
+    const subjectLayout = this.rig.subject && graph.layout ? graph.layout[this.rig.subject] : null;
+    const showIss = issValidity(time.simMs).status !== 'unavailable';
+    const subjectHelio = this.rig.subject ? this.astro.positions[this.rig.subject] : null;
+    graph.satellites.update(time.simMs, subjectLayout, subjectHelio, fade, this.nav.satellite, showIss);
+
+    this.rig.update(dt, now, this.view.aspect, graph.layout, graph.satellites.layouts);
+    graph.setDetailFade(this.rig.subject, fade);
     this.view.setLateralShift(0.085 * fade * fade * (3 - 2 * fade));
+    this.updateSun(fade);
+    this.openPendingSatellite();
 
     if (this.nav.layer !== 'scene' && now - this.lastInteraction > CLOSE_MENUS_AFTER_MS) {
       this.nav = { ...this.nav, layer: 'scene' };
@@ -351,6 +431,37 @@ export class App {
 
     this.view.render();
     this.measure(dt, now);
+  }
+
+  /**
+   * Soleil : taille fixe en vue générale, taille apparente réelle (vue du
+   * corps observé, à sa distance réelle du Soleil) en vue rapprochée.
+   */
+  private updateSun(fade: number): void {
+    const subject = this.rig.subject;
+    const p = subject ? this.astro.positions[subject] : null;
+    const cameraDistance = this.view.camera.position.length();
+    const radius = p ? displayedSunRadius(fade, cameraDistance, Math.hypot(p[0], p[1], p[2])) : displayedSunRadius(0, cameraDistance, 1);
+    this.sunRadius = radius;
+    this.view.graph.setSunDisplaySize(radius, displayedSunGlow(p ? fade : 0, radius, cameraDistance));
+  }
+
+  /** Si l'ISS observée n'a plus de données valables pour l'instant affiché, retour à la Terre. */
+  private checkIssAvailability(simMs: number): void {
+    if (this.nav.satellite !== 'iss' || issValidity(simMs).status !== 'unavailable') return;
+    this.nav = { ...this.nav, satellite: null, layer: this.nav.layer === 'satellites' ? 'bar' : this.nav.layer };
+    this.dispatchEffect({ type: 'closeSatellite' });
+    this.overlay.showToast('ISS : aucune donnée valable pour cette date');
+    this.refreshNavigationUi();
+  }
+
+  private openPendingSatellite(): void {
+    const id = this.pendingSatellite;
+    if (!id || this.rig.mode !== 'detail' || !this.view.graph.satellites.layouts[id]) return;
+    this.pendingSatellite = null;
+    this.nav = { ...this.nav, satellite: id, layer: 'scene', satelliteIndex: Math.max(0, this.satellitesFor(this.nav.detail).indexOf(id)) };
+    this.dispatchEffect({ type: 'openSatellite', id });
+    this.refreshNavigationUi();
   }
 
   private updateFocusRing(dt: number, now: number, idle: boolean): void {
@@ -376,9 +487,23 @@ export class App {
     this.overlay.setIdle(idle);
 
     const inDetail = this.nav.view === 'detail' && this.nav.detail;
-    if (inDetail) {
+    const satellite = this.nav.satellite;
+    if (inDetail && satellite) {
+      const visible = this.rig.mode === 'satellite' || this.rig.mode === 'toSatellite';
+      if (satellite === 'iss') {
+        this.overlay.setTitle('Station spatiale internationale', 'ISS · satellite artificiel en orbite basse', visible);
+      } else {
+        this.overlay.setTitle(MOONS[satellite].name, moonSubtitle(satellite), visible);
+      }
+      if (now - this.lastInfoUpdate > 1000 && visible) {
+        const iss = satellite === 'iss' ? issState(time.simMs) : null;
+        const info = satellite === 'iss' ? (iss ? issInfo(iss) : null) : moonInfo(satellite, this.astro);
+        if (info) this.overlay.setInfo(info.lines, info.note);
+        this.lastInfoUpdate = now;
+      }
+    } else if (inDetail) {
       const id = this.nav.detail as PlanetId;
-      const visible = this.rig.mode === 'detail' || this.rig.mode === 'toDetail';
+      const visible = this.rig.mode === 'detail' || this.rig.mode === 'toDetail' || this.rig.mode === 'toPlanet';
       this.overlay.setTitle(PLANETS[id].name, PLANETS[id].summary, visible);
       if (now - this.lastInfoUpdate > 1000 && visible) {
         const info = planetInfo(id, this.astro);
@@ -400,11 +525,15 @@ export class App {
         ? HINTS.bar
         : this.nav.layer === 'regions'
           ? HINTS.regions
-          : this.nav.layer === 'settings'
-            ? HINTS.settings
-            : this.nav.view === 'detail'
-              ? HINTS.detail
-              : HINTS.overview;
+          : this.nav.layer === 'satellites'
+            ? HINTS.satellites
+            : this.nav.layer === 'settings'
+              ? HINTS.settings
+              : this.nav.view === 'detail' && this.nav.satellite && this.nav.detail
+                ? HINTS.satellite(PLANETS[this.nav.detail].name)
+                : this.nav.view === 'detail'
+                  ? HINTS.detail
+                  : HINTS.overview;
     this.overlay.setHints(hint, !idle);
 
     // Décalage de quelques pixels toutes les 5 minutes (écrans OLED).
@@ -419,6 +548,7 @@ export class App {
   }
 
   private updateLabels(idle: boolean): void {
+    this.updateSatelliteLabels(idle);
     const visible = this.settings.labels && this.rig.mode === 'overview' && !idle;
     if (!visible) {
       this.overlay.updateLabels({}, null, false);
@@ -442,6 +572,56 @@ export class App {
       };
     }
     this.overlay.updateLabels(positions, this.nav.focused, true);
+  }
+
+  /** Noms des lunes (et de l'ISS) autour de la planète observée, hors des disques et masqués derrière la planète. */
+  private updateSatelliteLabels(idle: boolean): void {
+    const graph = this.view.graph;
+    const layouts = graph.satellites.layouts;
+    const parent = this.rig.subject && graph.layout ? graph.layout[this.rig.subject] : null;
+    const steady = this.rig.mode === 'detail' || this.rig.mode === 'satellite';
+    const visible = this.settings.labels && steady && !idle && Boolean(parent);
+    if (!visible || !parent) {
+      this.overlay.updateSatelliteLabels([], false);
+      return;
+    }
+    const camera = this.view.camera;
+    const w = window.innerWidth;
+    const hgt = window.innerHeight;
+    const fovTan = Math.tan((camera.fov * Math.PI) / 360);
+    const cam = camera.position;
+    const entries: SatelliteLabel[] = [];
+    for (const layout of Object.values(layouts)) {
+      if (!layout) continue;
+      const pos = this.tmp.set(layout.position[0], layout.position[1], layout.position[2]);
+      const distance = pos.distanceTo(cam);
+      // Masqué si la planète s'interpose entre la caméra et le satellite.
+      const hidden = this.behindSphere(layout.position, parent.position, parent.radius);
+      pos.project(camera);
+      entries.push({
+        id: layout.id,
+        name: layout.id === 'iss' ? 'ISS' : MOONS[layout.id].name,
+        x: (pos.x * 0.5 + 0.5) * w,
+        y: (-pos.y * 0.5 + 0.5) * hgt,
+        radiusPx: (layout.radius / (distance * fovTan)) * (hgt / 2),
+        visible: pos.z < 1 && !hidden && layout.id !== this.nav.satellite,
+        focused: layout.id === this.nav.satellite,
+      });
+    }
+    this.overlay.updateSatelliteLabels(entries, true);
+  }
+
+  /** Vrai si le point est caché par la sphère (centre, rayon) vue de la caméra. */
+  private behindSphere(point: [number, number, number], center: [number, number, number], radius: number): boolean {
+    const c = this.view.camera.position;
+    const d: [number, number, number] = [point[0] - c.x, point[1] - c.y, point[2] - c.z];
+    const len = Math.hypot(d[0], d[1], d[2]);
+    const u = [d[0] / len, d[1] / len, d[2] / len];
+    const oc = [center[0] - c.x, center[1] - c.y, center[2] - c.z];
+    const t = oc[0] * u[0] + oc[1] * u[1] + oc[2] * u[2];
+    if (t <= 0 || t >= len) return false;
+    const perp2 = oc[0] ** 2 + oc[1] ** 2 + oc[2] ** 2 - t * t;
+    return perp2 < radius * radius;
   }
 
   private measure(dt: number, now: number): void {
@@ -502,7 +682,19 @@ export class App {
         quality: this.quality.level,
         earthQuaternion: this.view.graph.earth.spin.quaternion.toArray(),
         planetPositions: Object.fromEntries(PLANET_IDS.map((id) => [id, this.view.graph.planets[id].root.position.toArray()])),
+        satellite: this.rig.satellite,
+        satelliteLayouts: this.view.graph.satellites.layouts,
+        cameraPosition: this.view.camera.position.toArray(),
+        sunRadius: this.sunRadius,
+        info: Array.from(document.querySelectorAll('.info .info__row')).map((row) => row.textContent),
+        title: document.querySelector('.title__name')?.textContent ?? '',
+        issShown: this.view.graph.satellites.issShown,
       }),
+      satellitesFor: (planet: PlanetId) => this.satellitesFor(planet),
+      projectScene: (x: number, y: number, z: number) => {
+        const p = this.tmp.set(x, y, z).project(this.view.camera);
+        return { x: (p.x * 0.5 + 0.5) * window.innerWidth, y: (-p.y * 0.5 + 0.5) * window.innerHeight, z: p.z };
+      },
       projectGeo: (lat: number, lon: number) => this.projectGeo(lat, lon),
       jumpTo: (ms: number, paused = true) => {
         this.time.jumpTo(ms, { paused });

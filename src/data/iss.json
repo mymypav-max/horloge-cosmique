@@ -1,0 +1,60 @@
+{
+  "description": "Éléments moyens SGP4 (repère TEME) de l'ISS, ajustés par scripts/iss/fit-iss-elements.mjs sur l'éphéméride prévisionnelle de la NASA. Ce n'est PAS un TLE publié par le NORAD ou CelesTrak : aucun n'était accessible lors de la préparation des données.",
+  "object": {
+    "name": "Station spatiale internationale (ISS)",
+    "noradId": 25544,
+    "cosparId": "1998-067A"
+  },
+  "omm": {
+    "CCSDS_OMM_VERS": "3.0",
+    "OBJECT_NAME": "ISS (ZARYA)",
+    "OBJECT_ID": "1998-067A",
+    "CENTER_NAME": "EARTH",
+    "REF_FRAME": "TEME",
+    "TIME_SYSTEM": "UTC",
+    "MEAN_ELEMENT_THEORY": "SGP4",
+    "EPOCH": "2026-10-28T12:00:00.000",
+    "MEAN_MOTION": 15.490892005520001,
+    "ECCENTRICITY": 0.0007211567204837311,
+    "INCLINATION": 51.634934312354545,
+    "RA_OF_ASC_NODE": 0.40741088091021993,
+    "ARG_OF_PERICENTER": 321.42631315892413,
+    "MEAN_ANOMALY": 222.81439752562437,
+    "EPHEMERIS_TYPE": 0,
+    "CLASSIFICATION_TYPE": "U",
+    "NORAD_CAT_ID": 25544,
+    "BSTAR": 0.0000970257929456673,
+    "MEAN_MOTION_DOT": 0,
+    "MEAN_MOTION_DDOT": 0
+  },
+  "source": {
+    "title": "NASA JSC Flight Operations Directorate (TOPO), ISS Trajectory Data — fichier CCSDS OEM ISS.OEM_J2K_EPH.txt",
+    "url": "https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.txt",
+    "originator": "NASA/JSC/FOD/TOPO",
+    "creationDate": "2026-10-28T15:03:19.312",
+    "frame": "EME2000",
+    "timeSystem": "UTC",
+    "usableStartUtc": "2026-10-28T12:00:00.000",
+    "usableStopUtc": "2026-11-12T12:00:00.000",
+    "stateVectors": 5401,
+    "sha256": "c46cf389be3d6510052cb6997714034f065cdc964bbc9de0c389d43b6be0ab2d",
+    "bytes": 717191,
+    "retrievedUtc": "2026-10-29T13:48:43Z"
+  },
+  "method": "EME2000 → TEME (précession-nutation IAU 2000B et équation des équinoxes, astronomy-engine), puis ajustement de Levenberg-Marquardt des 7 paramètres SGP4 (satellite.js) sur un vecteur d'état toutes les 12 minutes.",
+  "fit": {
+    "rmsKm": 0.803,
+    "maxKm": 2.131,
+    "samples": 5401,
+    "fromUtc": "2026-10-28T12:00:00.000",
+    "toUtc": "2026-11-12T12:00:00.000"
+  },
+  "ageingFromThreeDayFit": {
+    "description": "Écart maximal (km) d'éléments ajustés sur les 3 premiers jours seulement, autour du jour indiqué.",
+    "jour3": 1.245,
+    "jour5": 5.672,
+    "jour7": 11.295,
+    "jour10": 25.958,
+    "jour15": 58.518
+  }
+}

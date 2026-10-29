@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@fontsource/jost": "5.3.0",
+    "satellite.js": "7.1.0",
     "three": "0.162.0"
   },
   "devDependencies": {

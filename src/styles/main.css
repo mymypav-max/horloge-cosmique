@@ -404,6 +404,18 @@ body {
   opacity: 0 !important;
 }
 
+/* Libellés des satellites : plus discrets que ceux des planètes. */
+.planet-label--satellite {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+}
+
+.satellite__detail {
+  color: var(--sim);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 /* Mode horloge : seuls l'heure et la date restent visibles. */
 .is-idle .hints,
 .is-idle .labels,

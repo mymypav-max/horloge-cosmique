@@ -10,11 +10,18 @@
  *                  générale, faire pivoter la caméra en vue rapprochée) ;
  * - « bar »      : barre d'actions en bas de l'écran ;
  * - « regions »  : liste des régions de la Terre ;
+ * - « satellites » : liste des satellites de la planète observée (lunes,
+ *                  et ISS pour la Terre) ;
  * - « settings » : panneau de réglages.
+ *
+ * Vues : vue générale, vue rapprochée d'une planète, et vue d'un satellite
+ * (state.satellite non nul) dont on revient à la planète par Retour.
  */
 
+import { MOONS_BY_PLANET } from '../data/moons';
 import { PLANET_IDS, type PlanetId } from '../data/planets';
 import { REGIONS } from '../data/regions';
+import type { SatelliteId } from '../representation/satellites';
 
 export type Action =
   | 'up'
@@ -28,7 +35,7 @@ export type Action =
   | 'rewind'
   | 'fastForward';
 
-export type Layer = 'scene' | 'bar' | 'regions' | 'settings';
+export type Layer = 'scene' | 'bar' | 'regions' | 'satellites' | 'settings';
 export type View = 'overview' | 'detail';
 
 export type BarItem =
@@ -41,6 +48,9 @@ export type BarItem =
   | 'zoomIn'
   | 'zoomOut'
   | 'recenter'
+  | 'satellites'
+  | 'sun'
+  | 'parent'
   | 'overview';
 
 export interface NavState {
@@ -49,9 +59,12 @@ export interface NavState {
   focused: PlanetId;
   /** Planète affichée en vue rapprochée. */
   detail: PlanetId | null;
+  /** Satellite observé (vue d'un satellite de la planète `detail`). */
+  satellite: SatelliteId | null;
   layer: Layer;
   barIndex: number;
   regionIndex: number;
+  satelliteIndex: number;
   settingsIndex: number;
   /** Instant (ms) du premier appui sur Retour à la racine, pour confirmer la sortie. */
   exitArmedAt: number | null;
@@ -65,6 +78,9 @@ export type Effect =
   | { type: 'zoom'; direction: 1 | -1 }
   | { type: 'recenter' }
   | { type: 'centerRegion'; regionId: string }
+  | { type: 'openSatellite'; id: SatelliteId }
+  | { type: 'closeSatellite' }
+  | { type: 'sunView' }
   | { type: 'setting'; index: number; delta: 1 | -1 }
   | { type: 'armExit' }
   | { type: 'exit' };
@@ -74,6 +90,12 @@ export interface NavContext {
   now: number;
   /** Nombre d'entrées du panneau de réglages. */
   settingsCount: number;
+  /**
+   * Satellites proposés pour la planète observée, dans l'ordre de la liste
+   * (par défaut : ses lunes). L'application y ajoute l'ISS pour la Terre
+   * lorsque des données valables existent pour l'instant affiché.
+   */
+  satellites?: readonly SatelliteId[];
 }
 
 export interface NavResult {
@@ -89,19 +111,36 @@ export function initialNavState(): NavState {
     view: 'overview',
     focused: 'earth',
     detail: null,
+    satellite: null,
     layer: 'scene',
     barIndex: 0,
     regionIndex: 0,
+    satelliteIndex: 0,
     settingsIndex: 0,
     exitArmedAt: null,
   };
 }
 
+/** Vrai si la planète a des satellites à proposer (Mercure et Vénus n'en ont pas). */
+export function hasSatellites(planet: PlanetId | null): boolean {
+  return planet !== null && MOONS_BY_PLANET[planet].length > 0;
+}
+
 /** Éléments de la barre d'actions selon la vue. */
-export function barItems(state: Pick<NavState, 'view' | 'detail'>): BarItem[] {
+export function barItems(state: Pick<NavState, 'view' | 'detail'> & { satellite?: SatelliteId | null }): BarItem[] {
   if (state.view === 'overview') return ['pause', 'slower', 'faster', 'now', 'settings'];
-  const common: BarItem[] = ['zoomIn', 'zoomOut', 'recenter', 'pause', 'slower', 'faster', 'now', 'overview'];
-  return state.detail === 'earth' ? ['regions', ...common] : common;
+  const time: BarItem[] = ['pause', 'slower', 'faster', 'now'];
+  if (state.satellite) return ['zoomIn', 'zoomOut', 'recenter', 'sun', ...time, 'parent', 'overview'];
+  const items: BarItem[] = [];
+  if (state.detail === 'earth') items.push('regions');
+  if (hasSatellites(state.detail)) items.push('satellites');
+  return [...items, 'zoomIn', 'zoomOut', 'recenter', 'sun', ...time, 'overview'];
+}
+
+/** Satellites proposés dans la liste (contexte fourni par l'application, sinon les lunes de la planète). */
+export function satelliteList(state: Pick<NavState, 'detail'>, ctx: Pick<NavContext, 'satellites'>): readonly SatelliteId[] {
+  if (ctx.satellites) return ctx.satellites;
+  return state.detail ? MOONS_BY_PLANET[state.detail] : [];
 }
 
 /** Vrai si les flèches doivent piloter la caméra de la vue rapprochée. */
@@ -138,8 +177,17 @@ function activateBarItem(state: NavState, item: BarItem): NavResult {
       return { state, effects: [{ type: 'zoom', direction: -1 }] };
     case 'recenter':
       return { state, effects: [{ type: 'recenter' }] };
+    case 'satellites':
+      return { state: { ...state, layer: 'satellites' }, effects: [] };
+    case 'sun':
+      return { state: { ...state, layer: 'scene' }, effects: [{ type: 'sunView' }] };
+    case 'parent':
+      return { state: { ...state, satellite: null, layer: 'scene', barIndex: 0 }, effects: [{ type: 'closeSatellite' }] };
     case 'overview':
-      return { state: { ...state, view: 'overview', detail: null, layer: 'scene', barIndex: 0 }, effects: [{ type: 'closePlanet' }] };
+      return {
+        state: { ...state, view: 'overview', detail: null, satellite: null, layer: 'scene', barIndex: 0 },
+        effects: [{ type: 'closePlanet' }],
+      };
   }
 }
 
@@ -175,6 +223,8 @@ export function reduceNavigation(previous: NavState, action: Action, ctx: NavCon
       return reduceBar(state, action);
     case 'regions':
       return reduceRegions(state, action);
+    case 'satellites':
+      return reduceSatellites(state, action, ctx);
     case 'settings':
       return reduceSettings(state, action, ctx);
   }
@@ -190,7 +240,7 @@ function reduceScene(state: NavState, action: Action, ctx: NavContext): NavResul
       }
       case 'ok':
         return {
-          state: { ...state, view: 'detail', detail: state.focused, layer: 'scene', barIndex: 0 },
+          state: { ...state, view: 'detail', detail: state.focused, satellite: null, layer: 'scene', barIndex: 0, satelliteIndex: 0 },
           effects: [{ type: 'openPlanet', id: state.focused }],
         };
       case 'down':
@@ -213,10 +263,40 @@ function reduceScene(state: NavState, action: Action, ctx: NavContext): NavResul
     case 'menu':
       return { state: { ...state, layer: 'bar', barIndex: 0 }, effects: [] };
     case 'back':
+      // Depuis un satellite : retour à sa planète ; depuis une planète : vue générale.
+      if (state.satellite) {
+        return { state: { ...state, satellite: null, layer: 'scene', barIndex: 0 }, effects: [{ type: 'closeSatellite' }] };
+      }
       return {
         state: { ...state, view: 'overview', detail: null, layer: 'scene', barIndex: 0 },
         effects: [{ type: 'closePlanet' }],
       };
+    default:
+      return { state, effects: [] };
+  }
+}
+
+function reduceSatellites(state: NavState, action: Action, ctx: NavContext): NavResult {
+  const list = satelliteList(state, ctx);
+  const n = list.length;
+  if (n === 0) return { state: { ...state, layer: 'bar' }, effects: [] };
+  const index = Math.min(state.satelliteIndex, n - 1);
+  switch (action) {
+    case 'up':
+      return { state: { ...state, satelliteIndex: (index - 1 + n) % n }, effects: [] };
+    case 'down':
+      return { state: { ...state, satelliteIndex: (index + 1) % n }, effects: [] };
+    case 'ok': {
+      const id = list[index];
+      return {
+        state: { ...state, satellite: id, layer: 'scene', barIndex: 0, satelliteIndex: index },
+        effects: [{ type: 'openSatellite', id }],
+      };
+    }
+    case 'back':
+    case 'left':
+    case 'menu':
+      return { state: { ...state, layer: 'bar' }, effects: [] };
     default:
       return { state, effects: [] };
   }

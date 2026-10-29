@@ -128,3 +128,36 @@ export function formatPeriod(days: number): string {
   if (days < 1000) return `${formatNumber(days, days < 100 ? 1 : 0)} jours`;
   return `${formatNumber(days / 365.25, 2)} ans`;
 }
+
+/** Petit angle : « 0,53° (32′) », « 1,1′ » (diamètres apparents). */
+export function formatSmallAngle(deg: number): string {
+  const arcmin = deg * 60;
+  if (deg >= 0.1) return `${formatNumber(deg, 2)}° (${formatNumber(arcmin, 0)}′)`;
+  if (arcmin >= 1) return `${formatNumber(arcmin, 1)}′`;
+  return `${formatNumber(arcmin * 60, 0)}″`;
+}
+
+/** Période de révolution d'un satellite : « 7 h 39 min », « 1 j 18 h 28 min », « 360,1 jours ». */
+export function formatOrbitPeriod(days: number): string {
+  if (days >= 100) return `${formatNumber(days, 1)} jours`;
+  let minutes = Math.round(days * 1440);
+  const d = Math.floor(minutes / 1440);
+  minutes -= d * 1440;
+  const h = Math.floor(minutes / 60);
+  const m = minutes - h * 60;
+  if (d === 0) return `${h} h ${pad2(m)} min`;
+  return `${d} j ${h} h ${pad2(m)} min`;
+}
+
+/** Distance en kilomètres arrondie à 3 ou 4 chiffres significatifs : « 421 800 km », « 9 375 km ». */
+export function formatKm(km: number): string {
+  const step = km >= 1e6 ? 1000 : km >= 1e5 ? 100 : km >= 1e4 ? 10 : 1;
+  return `${formatNumber(Math.round(km / step) * step)} km`;
+}
+
+/** Date et heure UTC : « 28 octobre 2026, 12 h 00 UTC ». */
+export function formatUtc(ms: number): string {
+  const d = new Date(ms);
+  const day = d.getUTCDate() === 1 ? '1er' : String(d.getUTCDate());
+  return `${day} ${MONTHS[d.getUTCMonth()]} ${formatYear(d.getUTCFullYear())}, ${pad2(d.getUTCHours())} h ${pad2(d.getUTCMinutes())} UTC`;
+}

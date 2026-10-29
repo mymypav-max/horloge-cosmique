@@ -89,6 +89,8 @@ export class PlanetBody {
         rimColor: { value: new Color(rim[0], rim[1], rim[2]) },
         rimStrength: { value: rim[3] },
         opacity: { value: 1 },
+        sunLight: { value: 1 },
+        shadowTint: { value: new Color(0, 0, 0) },
       },
     });
     this.mesh = new Mesh(new SphereGeometry(1, segments, Math.max(16, segments / 2)), this.material);
@@ -267,5 +269,11 @@ export class SunBody {
     this.material.uniforms.opacity.value = opacity;
     this.material.transparent = opacity < 0.999;
     this.glow.material.opacity = 0.9 * opacity;
+  }
+
+  /** Rayon affiché du disque et diamètre du halo (unités de scène), voir representation/sunScale.ts. */
+  setDisplaySize(radius: number, glowDiameter: number): void {
+    this.spin.scale.setScalar(radius / SUN_VISUAL_RADIUS);
+    this.glow.scale.setScalar(glowDiameter);
   }
 }

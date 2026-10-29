@@ -2,7 +2,7 @@
  * Moteur de rendu : WebGLRenderer, caméra, redimensionnement, rendu.
  */
 
-import { PerspectiveCamera, type ShaderMaterial, Vector3, WebGLRenderer } from 'three';
+import { PerspectiveCamera, type ShaderMaterial, WebGLRenderer } from 'three';
 import type { QualityPreset } from '../perf/quality';
 import { SceneGraph } from './SceneGraph';
 import { STAR_SPHERE_RADIUS } from './starfield';
@@ -32,7 +32,6 @@ export class SceneView {
   private height = 1;
   /** Décalage horizontal du cadrage (fraction de la largeur), pour laisser de la place au panneau d'informations. */
   private lateralShift = 0;
-  private readonly tmp = new Vector3();
 
   constructor(
     readonly renderer: WebGLRenderer,
@@ -107,11 +106,7 @@ export class SceneView {
     // Les étoiles sont à l'infini : leur sphère suit la caméra.
     this.graph.stars.position.copy(this.camera.position);
     // Plan proche adapté à la distance de l'objet le plus proche (précision du tampon de profondeur).
-    let nearest = Infinity;
-    for (const body of Object.values(this.graph.planets)) {
-      const d = this.tmp.copy(body.root.position).distanceTo(this.camera.position) - body.radius * 2.4;
-      nearest = Math.min(nearest, d);
-    }
+    const nearest = this.graph.nearestSurfaceDistance(this.camera.position);
     const near = Math.max(0.005, Math.min(1, nearest * 0.5));
     if (Math.abs(near - this.camera.near) / this.camera.near > 0.05) {
       this.camera.near = near;

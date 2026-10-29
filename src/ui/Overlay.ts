@@ -37,12 +37,34 @@ const BAR_LABELS: Record<BarItem, string> = {
   zoomIn: 'Zoom +',
   zoomOut: 'Zoom −',
   recenter: 'Recentrer',
+  satellites: 'Satellites',
+  sun: 'Soleil',
+  parent: 'Planète',
   overview: 'Vue générale',
 };
 
 export interface InfoLine {
   label: string;
   value: string;
+}
+
+/** Entrée de la liste des satellites. */
+export interface SatelliteEntry {
+  id: string;
+  name: string;
+  /** Précision affichée à droite (ex. validité des données de l'ISS). */
+  detail?: string;
+}
+
+/** Libellé d'un satellite à l'écran (pixels CSS). */
+export interface SatelliteLabel {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  radiusPx: number;
+  visible: boolean;
+  focused: boolean;
 }
 
 export class Overlay {
@@ -60,6 +82,12 @@ export class Overlay {
   private readonly info: HTMLElement;
   private readonly bar: HTMLElement;
   private readonly regions: HTMLElement;
+  private readonly satellites: HTMLElement;
+  private readonly satellitesTitle: HTMLElement;
+  private readonly satellitesList: HTMLElement;
+  private satellitesSignature = '';
+  private readonly satLabelsLayer: HTMLElement;
+  private readonly satLabels = new Map<string, HTMLElement>();
   private readonly settings: HTMLElement;
   private readonly hints: HTMLElement;
   private readonly toast: HTMLElement;
@@ -70,6 +98,7 @@ export class Overlay {
   constructor(container: HTMLElement) {
     this.root = el('div', 'ui', container);
     this.labelsLayer = el('div', 'labels', this.root);
+    this.satLabelsLayer = el('div', 'labels labels--satellites', this.root);
     for (const id of PLANET_IDS) {
       const label = el('div', 'planet-label', this.labelsLayer);
       label.textContent = PLANETS[id].name;
@@ -97,6 +126,9 @@ export class Overlay {
       const li = el('li', 'panel__item', regionList);
       li.textContent = r.name;
     }
+    this.satellites = el('div', 'panel satellites', this.root);
+    this.satellitesTitle = el('h2', 'panel__title', this.satellites);
+    this.satellitesList = el('ul', 'panel__list', this.satellites);
     this.settings = el('div', 'panel settings', this.root);
     el('h2', 'panel__title', this.settings).textContent = 'Réglages';
     const settingsList = el('ul', 'panel__list', this.settings);
@@ -108,7 +140,9 @@ export class Overlay {
     const credits = el('div', 'panel__credits', this.settings);
     credits.innerHTML =
       'Positions : éléments képlériens de E. M. Standish (JPL). Tailles et distances ne sont pas à l’échelle ; les directions sont exactes.<br>' +
-      'Terre : NASA Blue Marble et Black Marble (domaine public). Planètes et Soleil : © Solar System Scope, CC BY 4.0. ' +
+      'Terre : NASA Blue Marble et Black Marble (domaine public). Planètes, Soleil et Lune : © Solar System Scope, CC BY 4.0. ' +
+      'Lunes : NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute ; USGS Astrogeology ; NASA 3D Resources. ' +
+      'Orbites des lunes : ajustées sur JPL Horizons (NASA/JPL-Caltech SSD). ISS : éphéméride NASA JSC (FOD/TOPO), modèle SGP4 (satellite.js). ' +
       'Étoiles : catalogue XHIP via d3-celestial (BSD-3). Police Jost (OFL).';
 
     this.hints = el('div', 'hints', this.root);
@@ -166,9 +200,14 @@ export class Overlay {
 
   // ------------------------------------------------- Barre et panneaux
 
-  renderNavigation(nav: NavState, paused: boolean, settings: Settings): void {
+  renderNavigation(
+    nav: NavState,
+    paused: boolean,
+    settings: Settings,
+    satellites: { title: string; entries: SatelliteEntry[]; parentName: string } = { title: '', entries: [], parentName: '' },
+  ): void {
     const items = barItems(nav);
-    const signature = `${items.join(',')}|${paused}`;
+    const signature = `${items.join(',')}|${paused}|${satellites.parentName}`;
     if (signature !== this.barSignature) {
       this.barSignature = signature;
       this.bar.innerHTML = '';
@@ -176,13 +215,14 @@ export class Overlay {
         const button = el('div', 'bar__item', this.bar);
         button.dataset.item = item;
         const icon = item === 'pause' ? (paused ? ICONS.play : ICONS.pause) : ICONS[item];
-        const label = item === 'pause' && paused ? 'Reprendre' : BAR_LABELS[item];
+        const label =
+          item === 'pause' && paused ? 'Reprendre' : item === 'parent' && satellites.parentName ? satellites.parentName : BAR_LABELS[item];
         button.innerHTML = `${icon}<span>${label}</span>`;
       }
     }
     const barOpen = nav.layer !== 'scene';
     this.bar.classList.toggle('is-visible', barOpen);
-    this.root.classList.toggle('has-panel', nav.layer === 'regions' || nav.layer === 'settings');
+    this.root.classList.toggle('has-panel', nav.layer === 'regions' || nav.layer === 'settings' || nav.layer === 'satellites');
     Array.from(this.bar.children).forEach((child, k) => {
       child.classList.toggle('is-focused', nav.layer === 'bar' && k === nav.barIndex);
     });
@@ -190,6 +230,24 @@ export class Overlay {
     this.regions.classList.toggle('is-visible', nav.layer === 'regions');
     this.regions.querySelectorAll('.panel__item').forEach((node, k) => {
       node.classList.toggle('is-focused', k === nav.regionIndex);
+    });
+
+    const satSignature = `${satellites.title}|${satellites.entries.map((e) => `${e.id}:${e.name}:${e.detail ?? ''}`).join(',')}`;
+    if (satSignature !== this.satellitesSignature) {
+      this.satellitesSignature = satSignature;
+      setText(this.satellitesTitle, satellites.title);
+      this.satellitesList.innerHTML = '';
+      for (const entry of satellites.entries) {
+        const li = el('li', 'panel__item panel__item--setting', this.satellitesList);
+        li.dataset.satellite = entry.id;
+        el('span', 'setting__label', li).textContent = entry.name;
+        if (entry.detail) el('span', 'satellite__detail', li).textContent = entry.detail;
+      }
+    }
+    this.satellites.classList.toggle('is-visible', nav.layer === 'satellites');
+    const satIndex = Math.min(nav.satelliteIndex, Math.max(0, satellites.entries.length - 1));
+    Array.from(this.satellitesList.children).forEach((node, k) => {
+      node.classList.toggle('is-focused', k === satIndex);
     });
 
     this.settings.classList.toggle('is-visible', nav.layer === 'settings');
@@ -268,6 +326,59 @@ export class Overlay {
       label.style.opacity = '';
       label.style.transform = `translate3d(${p.x.toFixed(1)}px, ${chosen.toFixed(1)}px, 0) translateX(-50%)`;
       label.classList.toggle('is-focused', id === focused);
+    }
+  }
+
+  /**
+   * Libellés des satellites de la planète observée (même logique que pour
+   * les planètes : sous l'astre, au-dessus en cas de chevauchement, masqué
+   * s'il n'y a pas de place ; le satellite observé est prioritaire).
+   */
+  updateSatelliteLabels(entries: SatelliteLabel[], visible: boolean): void {
+    this.satLabelsLayer.classList.toggle('is-visible', visible);
+    for (const [id, label] of this.satLabels) {
+      if (!visible || !entries.some((e) => e.id === id)) label.style.opacity = '0';
+    }
+    if (!visible) return;
+    const rem = window.innerHeight / 54;
+    const placed: Array<{ x0: number; x1: number; y0: number; y1: number }> = [];
+    for (const p of entries) {
+      if (p.visible) placed.push({ x0: p.x - p.radiusPx, x1: p.x + p.radiusPx, y0: p.y - p.radiusPx, y1: p.y + p.radiusPx });
+    }
+    const order = [...entries].sort((a, b) => Number(b.focused) - Number(a.focused));
+    for (const p of order) {
+      let label = this.satLabels.get(p.id);
+      if (!label) {
+        label = el('div', 'planet-label planet-label--satellite', this.satLabelsLayer);
+        this.satLabels.set(p.id, label);
+      }
+      setText(label, p.name);
+      if (!p.visible) {
+        label.style.opacity = '0';
+        continue;
+      }
+      const font = rem * (p.focused ? 0.82 : 0.72);
+      const width = p.name.length * font * 0.78 + font;
+      const height = font * 1.5;
+      const gap = rem * 0.3;
+      const r = Math.max(p.radiusPx, 3);
+      let chosen: number | null = null;
+      for (const top of [p.y + r + gap, p.y - r - gap - height]) {
+        const box = { x0: p.x - width / 2, x1: p.x + width / 2, y0: top, y1: top + height };
+        const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
+        if (!clash) {
+          placed.push(box);
+          chosen = top;
+          break;
+        }
+      }
+      if (chosen === null) {
+        label.style.opacity = '0';
+        continue;
+      }
+      label.style.opacity = '';
+      label.style.transform = `translate3d(${p.x.toFixed(1)}px, ${chosen.toFixed(1)}px, 0) translateX(-50%)`;
+      label.classList.toggle('is-focused', p.focused);
     }
   }
 

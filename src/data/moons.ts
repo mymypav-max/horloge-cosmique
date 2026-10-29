@@ -69,7 +69,8 @@ export const MOONS_BY_PLANET: Record<PlanetId, readonly MoonId[]> = {
   neptune: ['proteus', 'triton', 'nereid'],
 };
 
-export const MOON_IDS: readonly MoonId[] = Object.values(MOONS_BY_PLANET).flat();
+// (concaténation explicite : Array.prototype.flat n'existe pas dans les WebView Chromium < 69)
+export const MOON_IDS: readonly MoonId[] = ([] as MoonId[]).concat(...Object.values(MOONS_BY_PLANET));
 
 export const MOONS: Record<MoonId, MoonInfo> = {
   moon: {
