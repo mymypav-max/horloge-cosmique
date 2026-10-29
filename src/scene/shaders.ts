@@ -99,22 +99,18 @@ void main() {
 
   // Reflet du Soleil sur les océans (absent sous les nuages).
   vec3 H = normalize(sunDir + V);
-  float spec = pow(max(dot(N, H), 0.0), 70.0) * ocean * (1.0 - clouds) * smoothstep(0.0, 0.2, ndl);
-  surface += vec3(1.0, 0.92, 0.8) * spec * 0.55;
+  float spec = pow(max(dot(N, H), 0.0), 180.0) * ocean * (1.0 - clouds) * smoothstep(0.0, 0.2, ndl);
+  surface += vec3(1.0, 0.92, 0.8) * spec * 0.45;
 
   // Nuages éclairés par le Soleil.
   vec3 cloudColor = vec3(1.0) * light * 1.3;
   surface = mix(surface, cloudColor, clouds * 0.92);
 
-  // Teinte orangée dans la bande crépusculaire.
-  float twilight = smoothstep(-0.12, 0.0, ndl) * (1.0 - smoothstep(0.0, 0.16, ndl));
-  surface += vec3(0.20, 0.07, 0.02) * twilight * 0.06;
-
   // Côté nuit : faible lueur pour deviner les continents, et lumières urbaines.
   float night = 1.0 - smoothstep(-0.14, 0.02, ndl);
-  surface += day * 0.010 * night + vec3(0.6, 0.65, 0.75) * clouds * 0.008 * night;
+  surface += day * 0.007 * night + vec3(0.6, 0.65, 0.75) * clouds * 0.006 * night;
   vec3 cityColor = vec3(1.0, 0.70, 0.36);
-  surface += cityColor * pow(lights, 1.3) * lightsStrength * night * (1.0 - 0.75 * clouds);
+  surface += cityColor * pow(lights, 1.6) * lightsStrength * night * (1.0 - 0.75 * clouds);
 
   // Diffusion atmosphérique au limbe, côté éclairé.
   float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.6);

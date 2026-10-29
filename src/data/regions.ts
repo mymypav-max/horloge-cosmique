@@ -3,8 +3,9 @@
  *
  * Chaque région est définie par un point central (latitude, longitude en
  * degrés, longitudes positives à l'est) et une distance de caméra exprimée en
- * rayons terrestres affichés. Le niveau de zoom reste compatible avec la
- * résolution des textures (au mieux ~10 km par pixel de texture).
+ * rayons terrestres affichés. Le zoom est volontairement limité : les textures
+ * (2048 à 4096 pixels de large, soit 10 à 20 km par pixel) ne permettent pas
+ * de montrer davantage de détails.
  */
 
 export interface Region {
@@ -17,11 +18,11 @@ export interface Region {
 }
 
 export const REGIONS: readonly Region[] = [
-  { id: 'europe', name: 'Europe', latDeg: 50, lonDeg: 14, distance: 2.5 },
-  { id: 'france', name: 'France', latDeg: 46.6, lonDeg: 2.4, distance: 1.85 },
+  { id: 'europe', name: 'Europe', latDeg: 50, lonDeg: 14, distance: 2.6 },
+  { id: 'france', name: 'France', latDeg: 46.6, lonDeg: 2.4, distance: 2.15 },
   { id: 'afrique', name: 'Afrique', latDeg: 2, lonDeg: 20, distance: 2.9 },
-  { id: 'moyen-orient', name: 'Moyen-Orient', latDeg: 27, lonDeg: 45, distance: 2.3 },
-  { id: 'asie-sud', name: 'Asie du Sud', latDeg: 22, lonDeg: 80, distance: 2.4 },
+  { id: 'moyen-orient', name: 'Moyen-Orient', latDeg: 27, lonDeg: 45, distance: 2.5 },
+  { id: 'asie-sud', name: 'Asie du Sud', latDeg: 22, lonDeg: 80, distance: 2.5 },
   { id: 'asie-est', name: 'Asie de l’Est', latDeg: 36, lonDeg: 115, distance: 2.6 },
   { id: 'asie-sud-est', name: 'Asie du Sud-Est', latDeg: 5, lonDeg: 112, distance: 2.5 },
   { id: 'oceanie', name: 'Océanie', latDeg: -25, lonDeg: 140, distance: 2.8 },

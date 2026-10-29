@@ -11,7 +11,7 @@
   --ink-faint: rgba(220, 230, 255, 0.45);
   --accent: #8fc2ff;
   --sim: #ffc46b;
-  --glass: rgba(8, 13, 28, 0.62);
+  --glass: rgba(8, 13, 28, 0.72);
   --glass-border: rgba(170, 200, 255, 0.14);
   --focus: rgba(160, 205, 255, 0.95);
   --safe-y: 4.6vh;
@@ -396,6 +396,11 @@ body {
 .toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* Une liste ouverte masque le panneau d'informations (même emplacement). */
+.has-panel .info {
+  opacity: 0 !important;
 }
 
 /* Mode horloge : seuls l'heure et la date restent visibles. */

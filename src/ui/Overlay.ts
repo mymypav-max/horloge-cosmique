@@ -182,6 +182,7 @@ export class Overlay {
     }
     const barOpen = nav.layer !== 'scene';
     this.bar.classList.toggle('is-visible', barOpen);
+    this.root.classList.toggle('has-panel', nav.layer === 'regions' || nav.layer === 'settings');
     Array.from(this.bar.children).forEach((child, k) => {
       child.classList.toggle('is-focused', nav.layer === 'bar' && k === nav.barIndex);
     });

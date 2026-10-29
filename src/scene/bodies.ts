@@ -208,7 +208,7 @@ export class EarthBody extends PlanetBody {
         dataMap: { value: dataMap },
         sunDir: { value: new Vector3(1, 0, 0) },
         cloudsOn: { value: 1 },
-        lightsStrength: { value: 1.6 },
+        lightsStrength: { value: 1.1 },
         opacity: { value: 1 },
       },
     });

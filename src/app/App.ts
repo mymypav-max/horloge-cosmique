@@ -492,6 +492,13 @@ export class App {
       },
       dispatch: (a: Action) => this.dispatch(a),
       setClouds: (on: boolean) => this.view.graph.earth.setClouds(on),
+      setCityLights: (strength: number) => {
+        this.view.graph.earth.earthMaterial.uniforms.lightsStrength.value = strength;
+      },
+      centerOn: (latDeg: number, lonDeg: number, distance: number) => {
+        const layouts = this.view.graph.layout;
+        if (layouts) this.rig.centerRegion({ id: 'test', name: 'test', latDeg, lonDeg, distance }, layouts.earth, performance.now());
+      },
     };
   }
 }

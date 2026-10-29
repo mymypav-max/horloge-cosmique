@@ -109,7 +109,7 @@ export class CameraRig {
 
   private distanceLimits(layout: BodyLayout): { min: number; max: number } {
     const extent = visualExtent(layout.id);
-    const min = layout.id === 'earth' ? layout.radius * 1.25 : extent * 1.35;
+    const min = layout.id === 'earth' ? layout.radius * 1.6 : extent * 1.5;
     return { min, max: extent * 9 };
   }
 
