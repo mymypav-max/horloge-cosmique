@@ -1,0 +1,476 @@
+/*
+ * Styles de l'interface. Toutes les tailles sont exprimées en rem, la taille
+ * de base étant proportionnelle à la hauteur de l'écran : l'interface garde
+ * les mêmes proportions en 720p, 1080p ou 4K. Les marges respectent la zone
+ * de sécurité des téléviseurs (environ 5 %).
+ */
+
+:root {
+  --ink: #eef3ff;
+  --ink-soft: rgba(230, 238, 255, 0.72);
+  --ink-faint: rgba(220, 230, 255, 0.45);
+  --accent: #8fc2ff;
+  --sim: #ffc46b;
+  --glass: rgba(8, 13, 28, 0.62);
+  --glass-border: rgba(170, 200, 255, 0.14);
+  --focus: rgba(160, 205, 255, 0.95);
+  --safe-y: 4.6vh;
+  --safe-x: 3.6vw;
+  font-size: calc(100vh / 54);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #02040b;
+  color: var(--ink);
+  font-family: 'Jost', 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: none;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  transition: transform 4s ease-in-out;
+}
+
+/* -------------------------------------------------------------- Horloge */
+
+.clock {
+  position: absolute;
+  left: var(--safe-x);
+  bottom: var(--safe-y);
+  text-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.6);
+}
+
+.clock__badge {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sim);
+  margin-bottom: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.clock__badge.is-visible {
+  opacity: 1;
+}
+
+.clock__time {
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock__hm {
+  font-size: 4.9rem;
+}
+
+.clock__sec {
+  font-size: 1.7rem;
+  font-weight: 300;
+  color: var(--ink-soft);
+  margin-left: 0.3rem;
+}
+
+.clock__date {
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin-top: 0.45rem;
+}
+
+.clock__real {
+  font-size: 0.85rem;
+  color: var(--sim);
+  opacity: 0.9;
+  margin-top: 0.35rem;
+  min-height: 1em;
+}
+
+.is-simulated .clock__hm {
+  color: #fff6e6;
+}
+
+/* ---------------------------------------------------------------- Titre */
+
+.title {
+  position: absolute;
+  left: var(--safe-x);
+  top: var(--safe-y);
+  opacity: 0;
+  transform: translateY(-0.4rem);
+  transition: opacity 0.6s, transform 0.6s;
+  text-shadow: 0 0.1rem 1rem rgba(0, 0, 0, 0.7);
+}
+
+.title.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.title__name {
+  margin: 0;
+  font-size: 2.3rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+}
+
+.title__sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  max-width: 34rem;
+}
+
+/* -------------------------------------------------- Libellés planètes */
+
+.labels {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+
+.labels.is-visible {
+  opacity: 1;
+}
+
+.planet-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  transition: color 0.4s, opacity 0.4s;
+  text-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.9);
+  will-change: transform;
+}
+
+.planet-label.is-focused {
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.82rem;
+}
+
+/* ------------------------------------------------- Panneau d'infos */
+
+.info {
+  position: absolute;
+  right: var(--safe-x);
+  top: 50%;
+  width: 21rem;
+  transform: translate(0.6rem, -50%);
+  padding: 1rem 1.2rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.6s, transform 0.6s;
+}
+
+.info.is-visible {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.info__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.38rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.86rem;
+}
+
+.info__row:last-of-type {
+  border-bottom: 0;
+}
+
+.info__label {
+  color: var(--ink-faint);
+}
+
+.info__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.info__note {
+  margin: 0.6rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  line-height: 1.35;
+}
+
+/* ------------------------------------------------------ Barre d'actions */
+
+.bar {
+  position: absolute;
+  right: var(--safe-x);
+  bottom: var(--safe-y);
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity 0.35s, transform 0.35s;
+}
+
+.bar.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.bar__item {
+  width: 5.3rem;
+  padding: 0.55rem 0.2rem 0.45rem;
+  border-radius: 0.65rem;
+  text-align: center;
+  color: var(--ink-soft);
+  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.bar__item svg {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: block;
+  margin: 0 auto 0.3rem;
+}
+
+.bar__item span {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.bar__item.is-focused {
+  background: rgba(150, 195, 255, 0.18);
+  color: #fff;
+  transform: scale(1.07);
+  box-shadow: 0 0 0 2px var(--focus), 0 0 1.4rem rgba(120, 180, 255, 0.35);
+}
+
+/* ------------------------------------------------------------ Panneaux */
+
+.panel {
+  position: absolute;
+  right: var(--safe-x);
+  bottom: calc(var(--safe-y) + 6.6rem);
+  width: 24rem;
+  max-height: 70vh;
+  padding: 0.9rem 0.6rem 0.7rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.9rem;
+  opacity: 0;
+  transform: translateY(0.8rem);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.panel.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.panel__title {
+  margin: 0 0.6rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.panel__item {
+  padding: 0.42rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  transition: background 0.2s, color 0.2s;
+}
+
+.panel__item.is-focused {
+  background: rgba(150, 195, 255, 0.18);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.panel__item--setting {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.setting__value {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.panel__credits {
+  margin: 0.8rem 0.7rem 0.1rem;
+  font-size: 0.66rem;
+  line-height: 1.4;
+  color: var(--ink-faint);
+}
+
+/* ---------------------------------------------------- Aides et messages */
+
+.hints {
+  position: absolute;
+  right: var(--safe-x);
+  top: var(--safe-y);
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  opacity: 0;
+  transition: opacity 0.6s;
+  text-align: right;
+  text-shadow: 0 0 0.6rem rgba(0, 0, 0, 0.9);
+}
+
+.hints.is-visible {
+  opacity: 1;
+}
+
+.hints kbd {
+  font-family: inherit;
+  color: var(--ink-soft);
+  padding: 0 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.3rem;
+  margin: 0 0.15rem;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-y) + 7.4rem);
+  transform: translate(-50%, 0.6rem);
+  padding: 0.6rem 1.2rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 2rem;
+  font-size: 0.95rem;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Mode horloge : seuls l'heure et la date restent visibles. */
+.is-idle .hints,
+.is-idle .labels,
+.is-idle .title {
+  opacity: 0 !important;
+}
+
+/* ------------------------------------------------ Chargement et erreurs */
+
+.loading,
+.fatal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #0b1430 0%, #02040b 70%);
+  transition: opacity 0.9s;
+  z-index: 10;
+}
+
+.loading.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading__title {
+  font-size: 2.6rem;
+  font-weight: 200;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin: 0 0 1.4rem;
+  padding-left: 0.3em;
+}
+
+.loading__bar {
+  width: 16rem;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.loading__progress {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.fatal__title {
+  font-size: 1.8rem;
+  font-weight: 300;
+  margin: 0 0 1rem;
+}
+
+.fatal__text {
+  max-width: 40rem;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.debug {
+  position: fixed;
+  left: 0.5rem;
+  top: 0.5rem;
+  font: 12px/1.3 monospace;
+  color: #9f9;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.3rem 0.5rem;
+  z-index: 20;
+  white-space: pre;
+}
