@@ -1,0 +1,795 @@
+{
+  "description": "Éléments moyens à précession uniforme ajustés par scripts/moons/fit-moon-elements.mjs sur les vecteurs d'état JPL Horizons (2010–2030). Angles en degrés, temps t en jours TT depuis l'époque, distances en km. Plan de référence : pôle (ascension droite, déclinaison) dans le repère ICRF ; axe x vers le nœud ascendant de ce plan sur l'équateur ICRF.",
+  "epoch": {
+    "tt": "2020-01-01T00:00:00",
+    "jdTT": 2458849.5
+  },
+  "fitSpan": {
+    "fromUtc": "2010-01-01",
+    "toUtc": "2030-01-01"
+  },
+  "model": "λ = λ0 + n·t + A·sin(ν·t + φ) ; ϖ = ϖ0 + ϖ′·t ; Ω = Ω0 + Ω′·t ; a, e, i fixes ; M = λ − ϖ ; ω = ϖ − Ω",
+  "source": {
+    "data": "JPL Horizons API 1.2, vecteurs d'état géométriques ICRF (km, TDB), via les paquets npm astraeus-data-<planète>@0.3.0 (ajustements de Tchebychev des sorties Horizons, licence MIT)",
+    "url": "https://ssd.jpl.nasa.gov/horizons/",
+    "credit": "NASA/JPL-Caltech Solar System Dynamics"
+  },
+  "moons": {
+    "phobos": {
+      "parent": "mars",
+      "naifId": 401,
+      "horizons": {
+        "ephemeris": "mar099",
+        "command": "401",
+        "center": "500@4",
+        "fetched": "Tue Oct 20 04:07:10 2026",
+        "header": "Revised: Jun 02, 2025  Phobos / (Mars)  401"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 317.64933909,
+      "poleDecDeg": 52.88074881,
+      "aKm": 9374.917,
+      "meanMotionDegPerDay": 1128.84489421594,
+      "e": 0.01511211,
+      "varpiDeg": 324.38032595,
+      "varpiRateDegPerDay": 0.4351834181,
+      "iDeg": 1.0741815,
+      "nodeDeg": 225.99390038,
+      "nodeRateDegPerDay": -0.4357723957,
+      "lambdaDeg": 62.274421167,
+      "libration": null,
+      "fit": {
+        "rmsKm": 6.486,
+        "maxKm": 15.33,
+        "maxAngleDeg": 0.09389,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 24.11,
+        "maxKm": 46.04,
+        "maxAngleDeg": 0.2849,
+        "samples": 5000
+      }
+    },
+    "deimos": {
+      "parent": "mars",
+      "naifId": 402,
+      "horizons": {
+        "ephemeris": "mar099",
+        "command": "402",
+        "center": "500@4",
+        "fetched": "Tue Oct 20 04:08:07 2026",
+        "header": "Revised: Jun 02, 2025  Deimos / (Mars)  402"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 316.62348015,
+      "poleDecDeg": 53.52634691,
+      "aKm": 23457.512,
+      "meanMotionDegPerDay": 285.161848111348,
+      "e": 0.00023984,
+      "varpiDeg": 26.21558044,
+      "varpiRateDegPerDay": 0.02156152753,
+      "iDeg": 1.79005968,
+      "nodeDeg": 282.70187899,
+      "nodeRateDegPerDay": -0.01811729899,
+      "lambdaDeg": 264.6196385472,
+      "libration": null,
+      "fit": {
+        "rmsKm": 19.52,
+        "maxKm": 58.76,
+        "maxAngleDeg": 0.1435,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 70.53,
+        "maxKm": 137.5,
+        "maxAngleDeg": 0.3358,
+        "samples": 5000
+      }
+    },
+    "io": {
+      "parent": "jupiter",
+      "naifId": 501,
+      "horizons": {
+        "ephemeris": "jup365_merged",
+        "command": "501",
+        "center": "500@5",
+        "fetched": "Sat Oct 17 21:32:25 2026",
+        "header": "Revised: Mar 12, 2021  Io  / (Jupiter)  501"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 268.05140796,
+      "poleDecDeg": 64.49361089,
+      "aKm": 421765.796,
+      "meanMotionDegPerDay": 203.488958514403,
+      "e": 0.00412902,
+      "varpiDeg": 47.33945226,
+      "varpiRateDegPerDay": -0.7395069231,
+      "iDeg": 0.03563757,
+      "nodeDeg": 10.98854733,
+      "nodeRateDegPerDay": -0.1340390559,
+      "lambdaDeg": 325.0479504745,
+      "libration": null,
+      "fit": {
+        "rmsKm": 89.07,
+        "maxKm": 200.6,
+        "maxAngleDeg": 0.02731,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 119.2,
+        "maxKm": 234.7,
+        "maxAngleDeg": 0.03182,
+        "samples": 5000
+      }
+    },
+    "europa": {
+      "parent": "jupiter",
+      "naifId": 502,
+      "horizons": {
+        "ephemeris": "jup365_merged",
+        "command": "502",
+        "center": "500@5",
+        "fetched": "Sat Oct 17 21:35:57 2026",
+        "header": "Revised: Mar 12, 2021  Europa / (Jupiter)  502"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 268.08401706,
+      "poleDecDeg": 64.48792242,
+      "aKm": 671060.736,
+      "meanMotionDegPerDay": 101.37472444575,
+      "e": 0.00930421,
+      "varpiDeg": 227.17243213,
+      "varpiRateDegPerDay": -0.7394820331,
+      "iDeg": 0.46977956,
+      "nodeDeg": 306.39105684,
+      "nodeRateDegPerDay": -0.03247890787,
+      "lambdaDeg": 186.1541301851,
+      "libration": null,
+      "fit": {
+        "rmsKm": 690.6,
+        "maxKm": 1449,
+        "maxAngleDeg": 0.1243,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 737.9,
+        "maxKm": 1410,
+        "maxAngleDeg": 0.1212,
+        "samples": 5000
+      }
+    },
+    "ganymede": {
+      "parent": "jupiter",
+      "naifId": 503,
+      "horizons": {
+        "ephemeris": "jup365_merged",
+        "command": "503",
+        "center": "500@5",
+        "fetched": "Sat Oct 17 21:38:44 2026",
+        "header": "Revised: Mar 12, 2021  Ganymede / (Jupiter)  503"
+      },
+      "referencePlane": "plan de Laplace tabulé par JPL (sats/elem)",
+      "poleRaDeg": 268.2,
+      "poleDecDeg": 64.6,
+      "aKm": 1070434.026,
+      "meanMotionDegPerDay": 50.3176074716974,
+      "e": 0.00190838,
+      "varpiDeg": 327.27494012,
+      "varpiRateDegPerDay": 0.005636230981,
+      "iDeg": 0.22645571,
+      "nodeDeg": 359.60691988,
+      "nodeRateDegPerDay": -0.00504141639,
+      "lambdaDeg": 206.6153621469,
+      "libration": null,
+      "fit": {
+        "rmsKm": 1145,
+        "maxKm": 2351,
+        "maxAngleDeg": 0.1255,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 1302,
+        "maxKm": 2982,
+        "maxAngleDeg": 0.1594,
+        "samples": 5000
+      }
+    },
+    "callisto": {
+      "parent": "jupiter",
+      "naifId": 504,
+      "horizons": {
+        "ephemeris": "jup365_merged",
+        "command": "504",
+        "center": "500@5",
+        "fetched": "Sat Oct 17 21:33:10 2026",
+        "header": "Revised: Mar 12, 2021  Callisto / (Jupiter)  504"
+      },
+      "referencePlane": "plan de Laplace tabulé par JPL (sats/elem)",
+      "poleRaDeg": 268.7,
+      "poleDecDeg": 64.8,
+      "aKm": 1882738.407,
+      "meanMotionDegPerDay": 21.5710726968482,
+      "e": 0.00727887,
+      "varpiDeg": 7.41590158,
+      "varpiRateDegPerDay": 0.001768992968,
+      "iDeg": 0.22147408,
+      "nodeDeg": 285.41282548,
+      "nodeRateDegPerDay": -0.001763476515,
+      "lambdaDeg": 326.2842361635,
+      "libration": null,
+      "fit": {
+        "rmsKm": 746.9,
+        "maxKm": 1639,
+        "maxAngleDeg": 0.04987,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 1408,
+        "maxKm": 2544,
+        "maxAngleDeg": 0.07721,
+        "samples": 5000
+      }
+    },
+    "mimas": {
+      "parent": "saturn",
+      "naifId": 601,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "601",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:13:58 2026",
+        "header": "Revised: Jan 26, 2022  Mimas / (Saturn)  601"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 40.5746628,
+      "poleDecDeg": 83.5366362,
+      "aKm": 185478.679,
+      "meanMotionDegPerDay": 381.992213438091,
+      "e": 0.01964789,
+      "varpiDeg": 256.79321204,
+      "varpiRateDegPerDay": 1.000925151,
+      "iDeg": 1.56941446,
+      "nodeDeg": 72.31838244,
+      "nodeRateDegPerDay": -0.9994578562,
+      "lambdaDeg": 86.8035177529,
+      "libration": {
+        "amplitudeDeg": 47.085435,
+        "periodDays": 28626.808,
+        "phaseDeg": 258.149233
+      },
+      "fit": {
+        "rmsKm": 381.1,
+        "maxKm": 775.7,
+        "maxAngleDeg": 0.2436,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 815.7,
+        "maxKm": 2300,
+        "maxAngleDeg": 0.7244,
+        "samples": 5000
+      }
+    },
+    "enceladus": {
+      "parent": "saturn",
+      "naifId": 602,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "602",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:14:21 2026",
+        "header": "Revised: Jan 26, 2022  Enceladus / (Saturn)  602"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 40.57293948,
+      "poleDecDeg": 83.53688914,
+      "aKm": 238035.118,
+      "meanMotionDegPerDay": 262.731907945327,
+      "e": 0.00470697,
+      "varpiDeg": 120.0075887,
+      "varpiRateDegPerDay": 0.337665616,
+      "iDeg": 0.00823541,
+      "nodeDeg": 179.46882709,
+      "nodeRateDegPerDay": -0.416665256,
+      "lambdaDeg": 147.424575869,
+      "libration": {
+        "amplitudeDeg": 0.26374666,
+        "periodDays": 3854.9854,
+        "phaseDeg": 5.06098
+      },
+      "fit": {
+        "rmsKm": 534.5,
+        "maxKm": 925.6,
+        "maxAngleDeg": 0.2238,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 3073,
+        "maxKm": 4014,
+        "maxAngleDeg": 0.9618,
+        "samples": 5000
+      }
+    },
+    "tethys": {
+      "parent": "saturn",
+      "naifId": 603,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "603",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:14:45 2026",
+        "header": "Revised: Jan 26, 2022  Tethys  / (Saturn)  603"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 40.56556544,
+      "poleDecDeg": 83.53749336,
+      "aKm": 294672.964,
+      "meanMotionDegPerDay": 190.698016374676,
+      "e": 0.00013853,
+      "varpiDeg": 311.61479363,
+      "varpiRateDegPerDay": 0.1976341887,
+      "iDeg": 1.09096995,
+      "nodeDeg": 254.66884245,
+      "nodeRateDegPerDay": -0.1978467138,
+      "lambdaDeg": 301.0738116844,
+      "libration": {
+        "amplitudeDeg": 2.1448387,
+        "periodDays": 27680.674,
+        "phaseDeg": 77.234056
+      },
+      "fit": {
+        "rmsKm": 43.34,
+        "maxKm": 119.8,
+        "maxAngleDeg": 0.0233,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 94.49,
+        "maxKm": 260.9,
+        "maxAngleDeg": 0.05068,
+        "samples": 5000
+      }
+    },
+    "dione": {
+      "parent": "saturn",
+      "naifId": 604,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "604",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:15:00 2026",
+        "header": "Revised: Jan 26, 2022  Dione  / (Saturn)  604"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 40.5421651,
+      "poleDecDeg": 83.54082233,
+      "aKm": 377415.59,
+      "meanMotionDegPerDay": 131.53493314161,
+      "e": 0.00219622,
+      "varpiDeg": 109.60204479,
+      "varpiRateDegPerDay": 0.08421788011,
+      "iDeg": 0.02829953,
+      "nodeDeg": 35.24915802,
+      "nodeRateDegPerDay": -0.08424792225,
+      "lambdaDeg": 133.8623234677,
+      "libration": null,
+      "fit": {
+        "rmsKm": 135.8,
+        "maxKm": 374.1,
+        "maxAngleDeg": 0.05691,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 348.6,
+        "maxKm": 608.2,
+        "maxAngleDeg": 0.09215,
+        "samples": 5000
+      }
+    },
+    "rhea": {
+      "parent": "saturn",
+      "naifId": 605,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "605",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:15:13 2026",
+        "header": "Revised: Jan 26, 2022  Rhea  / (Saturn)  605"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 40.32654043,
+      "poleDecDeg": 83.55064151,
+      "aKm": 527067.863,
+      "meanMotionDegPerDay": 79.6900468328195,
+      "e": 0.00090765,
+      "varpiDeg": 210.99421305,
+      "varpiRateDegPerDay": -0.0005393904313,
+      "iDeg": 0.33277445,
+      "nodeDeg": 150.18628616,
+      "nodeRateDegPerDay": -0.02754865215,
+      "lambdaDeg": 28.3769616409,
+      "libration": null,
+      "fit": {
+        "rmsKm": 111.3,
+        "maxKm": 331,
+        "maxAngleDeg": 0.03584,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 223.1,
+        "maxKm": 620.2,
+        "maxAngleDeg": 0.0673,
+        "samples": 5000
+      }
+    },
+    "titan": {
+      "parent": "saturn",
+      "naifId": 606,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "606",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:15:26 2026",
+        "header": "Revised: Jan 26, 2022  Titan / (Saturn)  606"
+      },
+      "referencePlane": "plan de Laplace tabulé par JPL (sats/elem)",
+      "poleRaDeg": 36.4,
+      "poleDecDeg": 84,
+      "aKm": 1221864.804,
+      "meanMotionDegPerDay": 22.5769798871302,
+      "e": 0.0286944,
+      "varpiDeg": 218.54030017,
+      "varpiRateDegPerDay": 0.001413238358,
+      "iDeg": 0.34612656,
+      "nodeDeg": 14.25832952,
+      "nodeRateDegPerDay": -0.001081852399,
+      "lambdaDeg": 45.2473054495,
+      "libration": null,
+      "fit": {
+        "rmsKm": 327.5,
+        "maxKm": 650.2,
+        "maxAngleDeg": 0.03118,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 861.5,
+        "maxKm": 1974,
+        "maxAngleDeg": 0.0952,
+        "samples": 5000
+      }
+    },
+    "iapetus": {
+      "parent": "saturn",
+      "naifId": 608,
+      "horizons": {
+        "ephemeris": "sat441l",
+        "command": "608",
+        "center": "500@6",
+        "fetched": "Tue Oct 20 04:56:37 2026",
+        "header": "Revised: Jan 26, 2022  Iapetus / (Saturn)  608"
+      },
+      "referencePlane": "plan de Laplace tabulé par JPL (sats/elem)",
+      "poleRaDeg": 288.7,
+      "poleDecDeg": 78.9,
+      "aKm": 3561222.732,
+      "meanMotionDegPerDay": 4.53796739758868,
+      "e": 0.02848287,
+      "varpiDeg": 353.47024401,
+      "varpiRateDegPerDay": 0.000197199603,
+      "iDeg": 7.56799536,
+      "nodeDeg": 72.4906622,
+      "nodeRateDegPerDay": -0.0002723977545,
+      "lambdaDeg": 227.693562576,
+      "libration": null,
+      "fit": {
+        "rmsKm": 3068,
+        "maxKm": 6208,
+        "maxAngleDeg": 0.1027,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 6546,
+        "maxKm": 11340,
+        "maxAngleDeg": 0.1872,
+        "samples": 5000
+      }
+    },
+    "miranda": {
+      "parent": "uranus",
+      "naifId": 705,
+      "horizons": {
+        "ephemeris": "ura184_merged",
+        "command": "705",
+        "center": "500@7",
+        "fetched": "Tue Oct 20 04:13:15 2026",
+        "header": "Revised: Sep 24, 2025  Miranda / (Uranus)  705"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 77.3131769,
+      "poleDecDeg": 15.17285787,
+      "aKm": 129843.735,
+      "meanMotionDegPerDay": 254.690673800664,
+      "e": 0.00135578,
+      "varpiDeg": 294.75888227,
+      "varpiRateDegPerDay": 0.05501715676,
+      "iDeg": 4.42690121,
+      "nodeDeg": 56.09181151,
+      "nodeRateDegPerDay": -0.05541356532,
+      "lambdaDeg": 236.6276236055,
+      "libration": {
+        "amplitudeDeg": 1.4694319,
+        "periodDays": 4609.4384,
+        "phaseDeg": 171.760269
+      },
+      "fit": {
+        "rmsKm": 263.1,
+        "maxKm": 544.7,
+        "maxAngleDeg": 0.2403,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 5165,
+        "maxKm": 8514,
+        "maxAngleDeg": 3.762,
+        "samples": 5000
+      }
+    },
+    "ariel": {
+      "parent": "uranus",
+      "naifId": 701,
+      "horizons": {
+        "ephemeris": "ura184_merged",
+        "command": "701",
+        "center": "500@7",
+        "fetched": "Tue Oct 20 04:12:11 2026",
+        "header": "Revised: Sep 24, 2025  Ariel  / (Uranus)  701"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 77.31793539,
+      "poleDecDeg": 15.17287364,
+      "aKm": 190929.416,
+      "meanMotionDegPerDay": 142.835648201162,
+      "e": 0.0006336,
+      "varpiDeg": 185.95884561,
+      "varpiRateDegPerDay": 0.02486442687,
+      "iDeg": 0.01477261,
+      "nodeDeg": 245.115974,
+      "nodeRateDegPerDay": -0.05005928287,
+      "lambdaDeg": 266.1227116048,
+      "libration": {
+        "amplitudeDeg": 0.10063549,
+        "periodDays": 4596.6643,
+        "phaseDeg": 352.232358
+      },
+      "fit": {
+        "rmsKm": 77.89,
+        "maxKm": 262.5,
+        "maxAngleDeg": 0.07865,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 516.7,
+        "maxKm": 1039,
+        "maxAngleDeg": 0.3117,
+        "samples": 5000
+      }
+    },
+    "umbriel": {
+      "parent": "uranus",
+      "naifId": 702,
+      "horizons": {
+        "ephemeris": "ura184_merged",
+        "command": "702",
+        "center": "500@7",
+        "fetched": "Tue Oct 20 04:12:32 2026",
+        "header": "Revised: Sep 24, 2025  Umbriel / (Uranus)  702"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 77.37154824,
+      "poleDecDeg": 15.2067086,
+      "aKm": 265981.596,
+      "meanMotionDegPerDay": 86.8688766478721,
+      "e": 0.00384384,
+      "varpiDeg": 47.34071113,
+      "varpiRateDegPerDay": 0.008599771092,
+      "iDeg": 0.00396977,
+      "nodeDeg": 135.7447109,
+      "nodeRateDegPerDay": -0.145694067,
+      "lambdaDeg": 104.9188004713,
+      "libration": null,
+      "fit": {
+        "rmsKm": 250.2,
+        "maxKm": 556.4,
+        "maxAngleDeg": 0.1201,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 425.4,
+        "maxKm": 839.1,
+        "maxAngleDeg": 0.1813,
+        "samples": 5000
+      }
+    },
+    "titania": {
+      "parent": "uranus",
+      "naifId": 703,
+      "horizons": {
+        "ephemeris": "ura184_merged",
+        "command": "703",
+        "center": "500@7",
+        "fetched": "Tue Oct 20 04:12:48 2026",
+        "header": "Revised: Sep 24, 2025  Titania / (Uranus)  703"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 77.36252467,
+      "poleDecDeg": 15.08756519,
+      "aKm": 436280.785,
+      "meanMotionDegPerDay": 41.3514150584958,
+      "e": 0.00174448,
+      "varpiDeg": 253.04653453,
+      "varpiRateDegPerDay": 0.003744379095,
+      "iDeg": 0.06783128,
+      "nodeDeg": 241.75638266,
+      "nodeRateDegPerDay": -0.006237608686,
+      "lambdaDeg": 292.9536156821,
+      "libration": null,
+      "fit": {
+        "rmsKm": 601,
+        "maxKm": 1107,
+        "maxAngleDeg": 0.1455,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 615.6,
+        "maxKm": 1187,
+        "maxAngleDeg": 0.1559,
+        "samples": 5000
+      }
+    },
+    "oberon": {
+      "parent": "uranus",
+      "naifId": 704,
+      "horizons": {
+        "ephemeris": "ura184_merged",
+        "command": "704",
+        "center": "500@7",
+        "fetched": "Tue Oct 20 04:13:02 2026",
+        "header": "Revised: Sep 24, 2025  Oberon  / (Uranus)  704"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 77.40429482,
+      "poleDecDeg": 14.99949255,
+      "aKm": 583446.02,
+      "meanMotionDegPerDay": 26.739482715901,
+      "e": 0.00144598,
+      "varpiDeg": 188.23013173,
+      "varpiRateDegPerDay": 0.002105823191,
+      "iDeg": 0.00087494,
+      "nodeDeg": 29.07042621,
+      "nodeRateDegPerDay": -0.3459072242,
+      "lambdaDeg": 191.071641911,
+      "libration": null,
+      "fit": {
+        "rmsKm": 802,
+        "maxKm": 1504,
+        "maxAngleDeg": 0.1476,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 852.6,
+        "maxKm": 1875,
+        "maxAngleDeg": 0.184,
+        "samples": 5000
+      }
+    },
+    "triton": {
+      "parent": "neptune",
+      "naifId": 801,
+      "horizons": {
+        "ephemeris": "nep098_merged",
+        "command": "801",
+        "center": "500@8",
+        "fetched": "Tue Oct 20 04:11:17 2026",
+        "header": "Revised: Jul 08, 2026  Triton / (Neptune)  801"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 299.39637391,
+      "poleDecDeg": 43.34409782,
+      "aKm": 354759.072,
+      "meanMotionDegPerDay": 61.2601429740414,
+      "e": 0.00012649,
+      "varpiDeg": 284.03690854,
+      "varpiRateDegPerDay": 0.003992639805,
+      "iDeg": 156.94241276,
+      "nodeDeg": 188.29792778,
+      "nodeRateDegPerDay": 0.001440935059,
+      "lambdaDeg": 231.0079047344,
+      "libration": null,
+      "fit": {
+        "rmsKm": 0.9109,
+        "maxKm": 2.26,
+        "maxAngleDeg": 0.0003642,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 3.459,
+        "maxKm": 7.03,
+        "maxAngleDeg": 0.001135,
+        "samples": 5000
+      }
+    },
+    "proteus": {
+      "parent": "neptune",
+      "naifId": 808,
+      "horizons": {
+        "ephemeris": "nep098_merged",
+        "command": "808",
+        "center": "500@8",
+        "fetched": "Tue Oct 20 04:31:39 2026",
+        "header": "Revised: Jul 08, 2026  Proteus  / (Neptune)  808"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 299.8072607,
+      "poleDecDeg": 41.68725568,
+      "aKm": 117647.031,
+      "meanMotionDegPerDay": 320.765634129826,
+      "e": 0.0004903,
+      "varpiDeg": 219.60162527,
+      "varpiRateDegPerDay": 0.07706085612,
+      "iDeg": 0.75712048,
+      "nodeDeg": 192.4415444,
+      "nodeRateDegPerDay": -0.001735999375,
+      "lambdaDeg": 66.3887604212,
+      "libration": null,
+      "fit": {
+        "rmsKm": 48.5,
+        "maxKm": 87.38,
+        "maxAngleDeg": 0.04255,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 132.7,
+        "maxKm": 378.8,
+        "maxAngleDeg": 0.1845,
+        "samples": 5000
+      }
+    },
+    "nereid": {
+      "parent": "neptune",
+      "naifId": 802,
+      "horizons": {
+        "ephemeris": "nep098_merged",
+        "command": "802",
+        "center": "500@8",
+        "fetched": "Tue Oct 20 04:11:31 2026",
+        "header": "Revised: Jul 08, 2026  Nereid / (Neptune)  802"
+      },
+      "referencePlane": "plan ajusté sur les données",
+      "poleRaDeg": 262.86586548,
+      "poleDecDeg": 62.53852856,
+      "aKm": 5513662.306,
+      "meanMotionDegPerDay": 0.999742674526388,
+      "e": 0.74552837,
+      "varpiDeg": 262.68228156,
+      "varpiRateDegPerDay": -0.00006807771968,
+      "iDeg": 0.00007646,
+      "nodeDeg": 327.01677082,
+      "nodeRateDegPerDay": -2.492440156,
+      "lambdaDeg": 221.1468294168,
+      "libration": null,
+      "fit": {
+        "rmsKm": 5135,
+        "maxKm": 17890,
+        "maxAngleDeg": 0.5139,
+        "samples": 20000
+      },
+      "extrapolation10y": {
+        "rmsKm": 6247,
+        "maxKm": 18080,
+        "maxAngleDeg": 0.4448,
+        "samples": 5000
+      }
+    }
+  }
+}

@@ -75,3 +75,26 @@ export function longitudeDiffDeg(a: number, b: number): number {
   const d = (((a - b) % 360) + 540) % 360 - 180;
   return Math.abs(d);
 }
+
+function timeFromTT(utcMs: number): Astronomy.AstroTime {
+  return Astronomy.AstroTime.FromTerrestrialTime(centuriesTT(utcMs) * 36525);
+}
+
+/** Position géocentrique de la Lune (km, écliptique J2000) selon astronomy-engine. */
+export function referenceGeoMoonEcliptic(utcMs: number): [number, number, number] {
+  const v = Astronomy.RotateVector(EQJ_TO_ECL, Astronomy.GeoMoon(timeFromTT(utcMs)));
+  return [v.x * Astronomy.KM_PER_AU, v.y * Astronomy.KM_PER_AU, v.z * Astronomy.KM_PER_AU];
+}
+
+/**
+ * Position jovicentrique d'un satellite galiléen (km, équateur J2000 / EQJ)
+ * selon astronomy-engine (théorie E5 de Lieske, indépendante de JPL Horizons).
+ */
+export function referenceGalileanEquatorial(
+  name: 'io' | 'europa' | 'ganymede' | 'callisto',
+  utcMs: number,
+): [number, number, number] {
+  const info = Astronomy.JupiterMoons(timeFromTT(utcMs));
+  const v = info[name];
+  return [v.x * Astronomy.KM_PER_AU, v.y * Astronomy.KM_PER_AU, v.z * Astronomy.KM_PER_AU];
+}
