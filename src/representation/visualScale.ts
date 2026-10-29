@@ -40,11 +40,11 @@ export const SUN_VISUAL_RADIUS = 1.35;
 
 /** Rayons affichés des planètes (unités de scène) — non proportionnels aux rayons réels. */
 export const PLANET_VISUAL_RADIUS: Record<PlanetId, number> = {
-  mercury: 0.23,
-  venus: 0.36,
-  earth: 0.4,
-  mars: 0.29,
-  jupiter: 0.85,
+  mercury: 0.26,
+  venus: 0.4,
+  earth: 0.45,
+  mars: 0.33,
+  jupiter: 0.92,
   saturn: 0.72,
   uranus: 0.55,
   neptune: 0.54,

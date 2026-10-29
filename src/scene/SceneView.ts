@@ -71,12 +71,18 @@ export class SceneView {
     this.renderer.setSize(this.width, this.height, false);
   }
 
+  /** Rapport pixels physiques / pixels CSS du rendu (avant échelle dynamique). */
+  static baseRatio(devicePixelRatio: number, cssHeight: number, maxRenderHeight: number): number {
+    return Math.min(devicePixelRatio || 1, maxRenderHeight / Math.max(1, cssHeight));
+  }
+
   private applyPixelRatio(): void {
-    const dpr = Math.min(window.devicePixelRatio || 1, this.quality.maxPixelRatio);
-    const ratio = dpr * this.renderScale;
+    const base = SceneView.baseRatio(window.devicePixelRatio, this.height, this.quality.maxRenderHeight);
+    const ratio = base * this.renderScale;
     this.renderer.setPixelRatio(ratio);
+    // Taille des étoiles proportionnelle à la hauteur de l'image (référence 1080 lignes).
     const stars = this.graph.stars.material as ShaderMaterial;
-    stars.uniforms.pixelRatio.value = ratio;
+    stars.uniforms.pixelRatio.value = (this.height * ratio) / 1080;
   }
 
   /** Décale l'image vers la gauche d'une fraction de la largeur (0 = centré). */

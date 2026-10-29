@@ -34,6 +34,8 @@ import type { StartupOptions } from './startup';
 
 /** Inactivité (ms) avant de passer en mode horloge épuré. */
 const IDLE_AFTER_MS = 12_000;
+/** Inactivité (ms) avant de refermer automatiquement les menus. */
+const CLOSE_MENUS_AFTER_MS = 30_000;
 /** Durée maximale d'une touche fléchée maintenue sans répétition ni relâchement. */
 const HELD_KEY_TIMEOUT_MS = 700;
 
@@ -324,6 +326,10 @@ export class App {
     this.view.graph.setDetailFade(this.rig.subject, fade);
     this.view.setLateralShift(0.085 * fade * fade * (3 - 2 * fade));
 
+    if (this.nav.layer !== 'scene' && now - this.lastInteraction > CLOSE_MENUS_AFTER_MS) {
+      this.nav = { ...this.nav, layer: 'scene' };
+      this.refreshNavigationUi();
+    }
     const idle = now - this.lastInteraction > IDLE_AFTER_MS && this.nav.layer === 'scene';
     this.updateFocusRing(dt, now, idle);
     this.updateTexts(now, idle);

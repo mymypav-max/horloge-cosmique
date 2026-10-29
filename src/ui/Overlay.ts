@@ -230,6 +230,13 @@ export class Overlay {
     if (!visible) return;
     const rem = window.innerHeight / 54;
     const placed: Array<{ x0: number; x1: number; y0: number; y1: number }> = [];
+    // Les disques des planètes (et l'anneau de sélection) ne doivent pas être masqués.
+    for (const id of PLANET_IDS) {
+      const p = positions[id];
+      if (!p || !p.visible) continue;
+      const r = id === focused ? Math.max(p.radiusPx * 1.5, 16) : p.radiusPx;
+      placed.push({ x0: p.x - r, x1: p.x + r, y0: p.y - r, y1: p.y + r });
+    }
     const order = [...PLANET_IDS].sort((a, b) => (a === focused ? -1 : b === focused ? 1 : PLANET_IDS.indexOf(b) - PLANET_IDS.indexOf(a)));
     for (const id of order) {
       const label = this.labels.get(id)!;
@@ -242,7 +249,8 @@ export class Overlay {
       const width = PLANETS[id].name.length * font * 0.78 + font;
       const height = font * 1.5;
       const gap = rem * 0.35;
-      const candidates = [p.y + p.radiusPx + gap, p.y - p.radiusPx - gap - height];
+      const r = id === focused ? Math.max(p.radiusPx * 1.5, 16) : p.radiusPx;
+      const candidates = [p.y + r + gap, p.y - r - gap - height];
       let chosen: number | null = null;
       for (const top of candidates) {
         const box = { x0: p.x - width / 2, x1: p.x + width / 2, y0: top, y1: top + height };

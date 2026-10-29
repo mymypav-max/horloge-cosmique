@@ -16,8 +16,12 @@ export interface QualityPreset {
   /** Segments des sphères (longitude) ; la latitude utilise la moitié. */
   sphereSegments: number;
   earthSegments: number;
-  /** Plafond du rapport de pixels (devicePixelRatio). */
-  maxPixelRatio: number;
+  /**
+   * Hauteur maximale de l'image calculée, en pixels physiques. Sur Fire TV, la
+   * WebView expose souvent 960 × 540 px CSS avec un rapport de pixels de 2 :
+   * c'est la hauteur physique qui compte, pas le rapport de pixels.
+   */
+  maxRenderHeight: number;
   /** Échelle de rendu maximale (1 = résolution native de la fenêtre). */
   maxRenderScale: number;
   /** Échelle de rendu minimale autorisée par l'ajustement dynamique. */
@@ -38,9 +42,9 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     earthDayWidth: 2048,
     sphereSegments: 32,
     earthSegments: 64,
-    maxPixelRatio: 1,
-    maxRenderScale: 0.75,
-    minRenderScale: 0.5,
+    maxRenderHeight: 720,
+    maxRenderScale: 1,
+    minRenderScale: 0.6,
     antialias: false,
     maxStars: 1500,
     anisotropy: 1,
@@ -52,7 +56,7 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     earthDayWidth: 2048,
     sphereSegments: 48,
     earthSegments: 96,
-    maxPixelRatio: 1,
+    maxRenderHeight: 1080,
     maxRenderScale: 1,
     minRenderScale: 0.6,
     antialias: true,
@@ -66,7 +70,7 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     earthDayWidth: 4096,
     sphereSegments: 64,
     earthSegments: 128,
-    maxPixelRatio: 2,
+    maxRenderHeight: 2160,
     maxRenderScale: 1,
     minRenderScale: 0.7,
     antialias: true,
