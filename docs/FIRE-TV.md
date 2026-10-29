@@ -4,11 +4,12 @@ L'application Android (`android/`) est une enveloppe minimale : une WebView
 plein écran qui affiche l'application web compilée (`dist/`), embarquée dans
 l'APK. Elle ne nécessite ni compte Amazon ni publication sur l'Amazon Appstore.
 
-> **État de vérification** : l'APK est compilé avec succès par l'intégration
-> continue GitHub (Gradle, plugin Android 8.7.3), mais **aucun essai n'a été
-> fait sur un vrai Fire TV** ni dans Android Studio. Les procédures ci-dessous
-> sont celles d'Android Studio et du Fire TV ; elles restent à dérouler une
-> première fois sur votre matériel (voir docs/TESTS.md).
+> **État de vérification** : l'APK est compilé par l'intégration continue
+> GitHub (Gradle, plugin Android 8.7.3). La **version 1** a été installée et
+> utilisée par l'utilisateur sur un Fire TV Stick 3e génération (Fire OS
+> 7.7.1.7), en qualité maximale, sans problème de fluidité signalé. La
+> **version 2** (lunes, ISS, taille apparente du Soleil) **n'a pas encore été
+> testée sur l'appareil** : voir la liste dans docs/TESTS.md.
 
 ## Compatibilité
 
@@ -181,6 +182,11 @@ Menu ☰ sur l'icône, puis « Déplacer ».
 
 Le temps peut aussi être réglé depuis la barre de commandes, dans les deux vues.
 
+Version 2, dans la barre de la vue rapprochée : **Satellites** (lunes de la
+planète, et l'ISS pour la Terre ; ▲ ▼ puis OK), **Soleil** (montre le Soleil à
+sa taille apparente réelle). Dans la vue d'un satellite, **Retour** ramène à
+la planète (ou le bouton portant son nom), puis à la vue générale.
+
 ## Comportement sur le téléviseur
 
 - **Écran toujours allumé** tant que l'application est au premier plan (c'est
@@ -194,6 +200,16 @@ Le temps peut aussi être réglé depuis la barre de commandes, dans les deux vu
 - **Fuseau horaire** : l'heure affichée est celle du Fire TV ; en cas d'écart,
   vérifier le fuseau horaire dans les paramètres (rubrique *Préférences* ou
   *Date et heure* selon la version).
+
+## Données de l'ISS : à mettre à jour
+
+L'application ne télécharge rien. Les données de l'ISS embarquées couvrent
+du 28 octobre au 12 novembre 2026 ; ensuite la position est signalée comme
+approximative, puis indicative, et l'ISS n'est plus affichée **après le
+12 décembre 2026**. Pour la retrouver : sur un ordinateur connecté,
+`npm run data:iss`, `npm test`, `npm run build`, puis recompiler et
+réinstaller l'APK (ou laisser l'intégration continue GitHub le produire après
+un envoi sur `main`).
 
 ## Dépannage
 

@@ -178,10 +178,242 @@ Les étoiles (catalogue XHIP, magnitude ≤ 6) sont placées à leur position J2
 dans le même repère : la vue générale montre donc les planètes devant les
 constellations où elles se trouvent réellement, vues du Soleil.
 
+### Satellites (version 2)
+
+Les lunes et l'ISS n'apparaissent qu'en vue rapprochée de leur planète ; la
+vue générale est inchangée. Même principe (`src/representation/satellites.ts`) :
+
+- **direction exacte** vue de la planète (testé à 10⁻¹² rad près) ;
+- **distance** : Rv · g(r / Rp), avec Rv le rayon affiché de la planète, Rp
+  son rayon réel, g(x) = x jusqu'à 3 rayons (échelle respectée : Phobos,
+  ISS), puis g(x) = 3 + ln(x / 3) (compression logarithmique, strictement
+  croissante). Exemples : Lune 60,3 Rp → 6,0 Rv ; Titan 21 Rp → 4,9 Rv ;
+  Japet 61 Rp → 6,0 Rv ; Mimas 3,2 Rp → 3,06 Rv, au-delà des anneaux ;
+- **taille des lunes** : Rv · 0,6 · √(R / Rp) (l'ordre des tailles est
+  conservé, les petites lunes sont grossies pour rester visibles) ;
+- **ISS** : altitude à l'échelle de la Terre ; maquette agrandie environ
+  1 500 fois (envergure réelle 109 m).
+
+### Soleil en vue rapprochée (version 2)
+
+En vue générale, le Soleil garde son rayon fixe de 1,35. En vue rapprochée
+(planète, lune, ISS), il est affiché à sa **taille apparente réelle** vue du
+corps observé : voir la section 10.
+
 ## 7. Informations affichées
 
 Le panneau de la vue rapprochée n'affiche que des valeurs issues du modèle ou
 des données de référence : distance réelle au Soleil et à la Terre (UA et km),
-point subsolaire, saison astronomique de l'hémisphère nord (longitude du
-Soleil rapportée à l'équinoxe de la date), période orbitale, période de
-rotation, diamètre et inclinaison de l'axe réels.
+taille apparente du Soleil vue de la planète (section 10), point subsolaire,
+saison astronomique de l'hémisphère nord (longitude du Soleil rapportée à
+l'équinoxe de la date), période orbitale, période de rotation, diamètre et
+inclinaison de l'axe réels.
+
+Fiches des lunes : diamètre (rayon moyen JPL ; dimensions triaxiales de
+l'en-tête Horizons pour Phobos et Déimos), distance actuelle à la planète
+(modèle), période sidérale (moyen mouvement ajusté), inclinaison de l'orbite
+sur l'équateur de la planète (sur l'écliptique pour la Lune) à l'instant
+affiché, sens du mouvement par rapport à la rotation de la planète,
+excentricité, découverte, et rappel de la précision. Fiche de l'ISS : voir la
+section 9.
+
+## 8. Lunes (version 2)
+
+### Données et modèle
+
+| Planète | Lunes |
+|---|---|
+| Mercure, Vénus | aucune (aucune lune n'est affichée) |
+| Terre | Lune |
+| Mars | Phobos, Déimos |
+| Jupiter | Io, Europe, Ganymède, Callisto |
+| Saturne | Mimas, Encelade, Téthys, Dioné, Rhéa, Titan, Japet |
+| Uranus | Miranda, Ariel, Umbriel, Titania, Obéron |
+| Neptune | Protée, Triton, Néréide |
+
+**Lune** (`src/astro/moon.ts`) : formules de faible précision de
+l'*Astronomical Almanac* (longitude, latitude et parallaxe sous forme de six,
+quatre et cinq termes périodiques), rapportées à l'écliptique de la date puis
+ramenées dans l'écliptique J2000 (obliquité et précession IAU 1976). Précision
+annoncée par l'Almanac : 0,3° en longitude, 0,2° en latitude (1900–2100).
+Mesurée contre astronomy-engine : **0,36° au plus et 0,31 % sur la distance**
+de 1900 à 2100 (0,38° de 1500 à 1900 et de 2100 à 2999 ; 2,1° entre −1000 et
+0, où les termes séculaires omis et l'incertitude de ΔT dominent).
+
+**Autres lunes** (`src/astro/moons.ts`, données `src/data/moonOrbits.json`) :
+aucune source accessible ne fournissait de théories analytiques libres de
+droits pour toutes ces lunes (les éléments moyens publiés par le JPL ne sont,
+selon le JPL lui-même, pas destinés au calcul d'éphémérides). Le projet a donc
+**ajusté ses propres éléments** sur les vecteurs d'état officiels **JPL
+Horizons** (éphémérides mar099, jup365, sat441, ura184, nep098) :
+
+1. source : paquets npm `astraeus-data-<planète>@0.3.0` (licence MIT), qui
+   distribuent des ajustements de Tchebychev des sorties de l'API Horizons
+   (repère ICRF, km, TDB, 2010–2030 ; écart à Horizons inférieur au mètre
+   selon leur index) ; empreintes SHA-256 vérifiées par
+   `scripts/moons/fetch-horizons-fits.sh` ;
+2. `scripts/moons/fit-moon-elements.mjs` relit ces séries (décodeur réécrit)
+   et ajuste par moindres carrés (Levenberg-Marquardt, 3 000 instants) une
+   ellipse képlérienne dont le nœud et le péricentre tournent uniformément
+   (λ = λ0 + n·t, ϖ = ϖ0 + ϖ′·t, Ω = Ω0 + Ω′·t), autour d'un plan de
+   référence fixe : plan de Laplace tabulé par le JPL pour Ganymède,
+   Callisto, Titan et Japet (précession lente), plan ajusté sur les données
+   pour les autres ;
+3. pour les lunes en résonance, une libration sinusoïdale de la longitude
+   moyenne est ajoutée si elle divise au moins par deux l'écart : Mimas
+   (47° sur 78 ans, conforme à la grande libération connue de la résonance
+   Mimas–Téthys), Téthys, Encelade, Miranda, Ariel ;
+4. l'écart au modèle JPL est mesuré sur 20 000 instants de 2010–2030 ; un test
+   d'extrapolation réajuste le modèle sur 2010–2020 et le compare aux données
+   de 2020–2030 (ordre de grandeur de la dégradation hors de la période).
+
+Le script est déterministe : relancé sur des sources fraîchement
+téléchargées, il redonne un fichier identique octet pour octet (vérifié).
+
+### Précision mesurée
+
+Écart angulaire vu de la planète (et en km) entre le modèle embarqué et JPL
+Horizons :
+
+| Lune | Éphéméride JPL | a (km) | Période (j) | e | Libration | Écart max. 2010–2030 | Extrapolation 10 ans (test) |
+|---|---|---|---|---|---|---|---|
+| Phobos | mar099 | 9 375 | 0,3189 | 0,0151 | — | 15 km (0,094°) | 46 km (0,28°) |
+| Déimos | mar099 | 23 458 | 1,2624 | 0,0002 | — | 59 km (0,143°) | 138 km (0,34°) |
+| Io | jup365_merged | 421 766 | 1,7691 | 0,0041 | — | 201 km (0,027°) | 235 km (0,03°) |
+| Europe | jup365_merged | 671 061 | 3,5512 | 0,0093 | — | 1 449 km (0,124°) | 1 410 km (0,12°) |
+| Ganymède | jup365_merged | 1 070 434 | 7,1546 | 0,0019 | — | 2 351 km (0,126°) | 2 982 km (0,16°) |
+| Callisto | jup365_merged | 1 882 738 | 16,6890 | 0,0073 | — | 1 639 km (0,050°) | 2 544 km (0,08°) |
+| Mimas | sat441l | 185 479 | 0,9424 | 0,0196 | 47,09° / 78,4 ans | 776 km (0,244°) | 2 300 km (0,72°) |
+| Encelade | sat441l | 238 035 | 1,3702 | 0,0047 | 0,26° / 10,6 ans | 926 km (0,224°) | 4 014 km (0,96°) |
+| Téthys | sat441l | 294 673 | 1,8878 | 0,0001 | 2,14° / 75,8 ans | 120 km (0,023°) | 261 km (0,05°) |
+| Dioné | sat441l | 377 416 | 2,7369 | 0,0022 | — | 374 km (0,057°) | 608 km (0,09°) |
+| Rhéa | sat441l | 527 068 | 4,5175 | 0,0009 | — | 331 km (0,036°) | 620 km (0,07°) |
+| Titan | sat441l | 1 221 865 | 15,9454 | 0,0287 | — | 650 km (0,031°) | 1 974 km (0,10°) |
+| Japet | sat441l | 3 561 223 | 79,3307 | 0,0285 | — | 6 208 km (0,103°) | 11 340 km (0,19°) |
+| Miranda | ura184_merged | 129 844 | 1,4135 | 0,0014 | 1,47° / 12,6 ans | 545 km (0,240°) | 8 514 km (3,76°) |
+| Ariel | ura184_merged | 190 929 | 2,5204 | 0,0006 | 0,10° / 12,6 ans | 262 km (0,079°) | 1 039 km (0,31°) |
+| Umbriel | ura184_merged | 265 982 | 4,1442 | 0,0038 | — | 556 km (0,120°) | 839 km (0,18°) |
+| Titania | ura184_merged | 436 281 | 8,7059 | 0,0017 | — | 1 107 km (0,145°) | 1 187 km (0,16°) |
+| Obéron | ura184_merged | 583 446 | 13,4632 | 0,0014 | — | 1 504 km (0,148°) | 1 875 km (0,18°) |
+| Protée | nep098_merged | 117 647 | 1,1223 | 0,0005 | — | 87 km (0,043°) | 379 km (0,18°) |
+| Triton | nep098_merged | 354 759 | 5,8766 | 0,0001 | — | 2 km (0,000°) | 7 km (0,00°) |
+| Néréide | nep098_merged | 5 513 662 | 360,0927 | 0,7455 | — | 17 890 km (0,514°) | 18 080 km (0,44°) |
+
+Contrôle indépendant des satellites galiléens contre la théorie E5 de Lieske
+(astronomy-engine, sans lien avec JPL Horizons) : écart maximal 0,04° (Io),
+0,13° (Europe), 0,13° (Ganymède) et 0,06° (Callisto) sur 2010–2030 ; 0,10°,
+0,15°, 0,54° et 0,15° sur 1900–2100.
+
+**Limites** : hors de 2010–2030, les positions sont **extrapolées** et
+l'erreur croît (quelques dixièmes de degré par décennie, beaucoup plus pour
+Miranda et Mimas ; au-delà de quelques siècles, la position sur l'orbite n'est
+plus significative). La fiche l'indique (« Position extrapolée… »). Les
+accélérations séculaires (Phobos) et les perturbations à longue période non
+représentées sont négligées.
+
+### Sens du mouvement, inclinaison, rotation
+
+- Le **sens** est jugé par rapport à la rotation de la planète : Triton est
+  la seule lune rétrograde de la liste (inclinaison 157° sur l'équateur de
+  Neptune). Les lunes d'Uranus sont directes : elles tournent dans le sens de
+  rotation d'Uranus, même si leur inclinaison sur le pôle nord IAU d'Uranus
+  (pôle du côté nord de l'écliptique, rotation rétrograde) vaut environ 180°.
+- **Rotation synchrone simplifiée** : chaque lune montre à sa planète la face
+  de longitude 0°, vue depuis la position « moyenne » (mouvement uniforme),
+  d'où une libration optique en longitude ; l'inclinaison réelle de l'axe sur
+  l'orbite (1,5° pour la Lune) et la libration physique sont négligées.
+  Néréide ne tourne pas de façon synchrone, mais elle n'a pas de carte : son
+  orientation est sans objet.
+
+### Ombres et éclipses
+
+`src/astro/shadow.ts` calcule l'ombre et la pénombre (deux cônes) de la
+planète sur chacun de ses satellites, avec les distances réelles : éclipses de
+Lune (l'éclipse totale du 14 mars 2025 est reproduite), éclipses des satellites
+galiléens (Io passe environ 5 % de chaque révolution dans l'ombre de Jupiter),
+passages de l'ISS dans l'ombre de la Terre (environ 37 % de l'orbite fin
+octobre 2026). La teinte rouge de la Lune éclipsée est indicative (lumière
+réfractée par l'atmosphère terrestre, non calculée).
+
+## 9. Station spatiale internationale (version 2)
+
+### Source des données
+
+Aucun TLE officiel (CelesTrak, Space-Track) n'était accessible depuis
+l'environnement de préparation (accès réseau refusé). La source retenue est
+l'**éphéméride prévisionnelle officielle de la NASA** :
+
+| Élément | Valeur |
+|---|---|
+| Fichier | `ISS.OEM_J2K_EPH.txt` (CCSDS OEM 2.0) |
+| Adresse | https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.txt |
+| Producteur | NASA/JSC/FOD/TOPO (Flight Operations Directorate, Johnson Space Center) |
+| Création | 2026-10-28 15:03:19 UTC |
+| Période couverte | 2026-10-28 12:00 → 2026-11-12 12:00 UTC (5 401 vecteurs d'état, toutes les 4 min) |
+| Repère, temps | EME2000, UTC |
+| Récupéré le | 2026-10-29 13:48:43 UTC |
+| Empreinte SHA-256 | c46cf389be3d6510052cb6997714034f065cdc964bbc9de0c389d43b6be0ab2d |
+
+### Méthode
+
+`scripts/iss/fit-iss-elements.mjs` convertit chaque vecteur d'état EME2000
+en TEME (précession-nutation IAU 2000B et équation des équinoxes,
+astronomy-engine), puis ajuste par moindres carrés les sept paramètres SGP4
+(moyen mouvement, e·cos ω, e·sin ω, inclinaison, nœud, ω + M, B*) avec la
+propagation SGP4 de satellite.js 7.1.0. Les éléments obtenus
+(`src/data/iss.json`, format OMM, époque 2026-10-28 12:00 UTC) **ne sont pas
+un TLE officiel** et sont présentés comme tels.
+
+- Écart au fichier NASA sur toute la période : **0,80 km (moyenne
+  quadratique), 2,13 km au plus**.
+- Vieillissement (éléments ajustés sur les 3 premiers jours seulement,
+  comparés aux jours suivants) : 1,2 km au jour 3, 5,7 km au jour 5,
+  11 km au jour 7, 26 km au jour 10, 59 km au jour 15.
+- SGP4 (satellite.js) reproduit les cas de vérification officiels de
+  Vallado et al. (2006) à mieux que 1 cm (tests).
+
+Dans l'application (`src/astro/iss.ts`), SGP4 est évalué au temps de
+l'application (temps réel, pause, accélération, autre date), à chaque image
+pour un mouvement fluide. TEME est assimilé à l'équateur moyen de la date et
+ramené dans l'écliptique J2000 par la précession inverse ; la nutation
+négligée représente moins de 0,6 km. Écart total mesuré à l'éphéméride NASA :
+moins de 3 km.
+
+### Politique de validité
+
+| État | Condition | Affichage |
+|---|---|---|
+| Prévision NASA à jour | instant dans la période des données | position à quelques km près |
+| Approximative | jusqu'à 7 jours hors de la période | « approximative (données à N j) » ; écart de quelques dizaines de km possible |
+| Indicative | de 7 à 30 jours hors de la période | « indicative » ; position le long de l'orbite incertaine (manœuvres de rehaussement imprévisibles) |
+| Indisponible | au-delà de 30 jours, ou avant le 20 novembre 1998 (lancement de Zarya) | ISS absente de la vue et de la liste |
+
+Ces seuils sont des choix du projet, appuyés sur le test de vieillissement. La
+fiche rappelle toujours qu'il s'agit d'une position **calculée**, non observée
+en temps réel. Avec les données embarquées, l'ISS cesse d'être affichée
+après le **12 décembre 2026** : il faut alors mettre à jour les données
+(`npm run data:iss`, sur un ordinateur connecté) puis recompiler l'APK.
+
+## 10. Taille apparente du Soleil (version 2)
+
+Diamètre angulaire d'une sphère de diamètre D vue à la distance r :
+**θ = 2·arcsin(D / 2r)**, avec D = 2 × 695 700 km (rayon nominal IAU) et r
+la distance réelle Soleil–corps à l'instant affiché (`src/astro/sun.ts`).
+
+| Depuis | θ (exemple du 29 octobre 2026) |
+|---|---|
+| Mercure (0,344 UA) | 1,55° (93′) — de 1,14° à 1,73° selon la position sur l'orbite |
+| Terre (0,993 UA) | 0,54° (32′) — de 0,524° (aphélie) à 0,542° (périhélie) |
+| Jupiter (5,31 UA) | 0,10° (6′) |
+| Saturne (9,43 UA) | 3,4′ |
+| Neptune (29,9 UA) | 1,1′ |
+
+Affichage (`src/representation/sunScale.ts`) : le Soleil étant au centre de
+la scène, un disque de rayon R vu de la caméra à la distance d sous-tend
+2·arcsin(R/d) ; avec R = d · R☉ / r, l'angle affiché est **exactement** θ,
+quelles que soient la distance affichée et la position de la caméra. Pendant
+la transition vers une vue rapprochée, le rayon passe progressivement (en
+échelle logarithmique) de 1,35 à cette valeur. Le halo garde un diamètre
+minimal de 0,9° pour que le Soleil reste visible de loin comme une étoile très
+brillante. La vue « Soleil » (barre d'actions) place la caméra du côté nuit,
+avec le Soleil à 22° de l'axe de visée, à gauche du corps.

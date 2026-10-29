@@ -11,9 +11,14 @@ pour l'heure qu'il est**.
 |---|---|
 | ![Terre](docs/captures/terre.jpg) | ![Europe](docs/captures/europe.jpg) |
 
+| Lune devant la Terre (V2) | Io devant Jupiter (V2) | ISS au-dessus de la Terre (V2) |
+|---|---|---|
+| ![Lune](docs/captures/lune.jpg) | ![Io](docs/captures/io.jpg) | ![ISS](docs/captures/iss.jpg) |
+
 > Les captures ci-dessus ont été réalisées en **mode simulation** (heure
 > choisie), ce qu'indiquent le bandeau orangé « Simulation » et la ligne
-> « Heure réelle » sous l'horloge.
+> « Heure réelle » sous l'horloge. Captures V2 : 29 octobre 2026, 18 h 00 UTC
+> (Lune, Io) et 19 h 05 UTC (ISS), rendu logiciel dans Chromium.
 
 ## Ce que fait l'application
 
@@ -38,6 +43,25 @@ pour l'heure qu'il est**.
   l'éclairage.
 - **Temps** : temps réel par défaut ; pause, accélération de ×60 à ×2 629 800
   (un mois par seconde) et retour à l'heure actuelle.
+- **Lunes** (version 2) : les 22 lunes principales (Lune ; Phobos, Déimos ;
+  Io, Europe, Ganymède, Callisto ; Mimas, Encelade, Téthys, Dioné, Rhéa,
+  Titan, Japet ; Miranda, Ariel, Umbriel, Titania, Obéron ; Protée, Triton,
+  Néréide) tournent autour de leur planète en vue rapprochée, avec leurs
+  orbites. Leurs positions suivent le temps de l'application ; elles viennent
+  d'un modèle ajusté sur les éphémérides JPL Horizons (écart de 0,0003° à
+  0,5° sur 2010–2030) et, pour la Lune, des formules de l'Astronomical
+  Almanac. Liste « Satellites », vue d'une lune avec sa planète derrière,
+  fiche en français, retour à la planète. Mercure et Vénus n'ont pas de lune.
+- **ISS** (version 2) : la Station spatiale internationale, dans la vue de la
+  Terre, avec son orbite et une maquette agrandie. Position calculée par le
+  modèle SGP4 à partir de données NASA embarquées (jamais téléchargées par
+  l'application), avec un état de validité affiché ; ce n'est pas une
+  position observée en temps réel.
+- **Taille apparente du Soleil** (version 2) : en vue rapprochée, le Soleil est
+  affiché avec sa vraie taille vue de la planète (0,54° depuis la Terre,
+  1,1′ depuis Neptune) ; action « Soleil » pour le montrer.
+- **Ombres** (version 2) : les lunes et l'ISS s'assombrissent dans l'ombre de
+  leur planète (éclipses de Lune, d'Io…).
 - **Fonctionnement hors ligne** : toutes les ressources sont embarquées.
 
 ## État du projet
@@ -45,11 +69,11 @@ pour l'heure qu'il est**.
 | Élément | État |
 |---|---|
 | Application web (TypeScript, Vite, Three.js) | ✅ fonctionnelle, testée dans Chromium |
-| Modèle astronomique | ✅ 143 tests unitaires, comparé à une bibliothèque de référence |
-| Vérification de bout en bout (rendu, navigation, terminateur) | ✅ 22/22 contrôles dans Chromium (WebGL logiciel) |
+| Modèle astronomique | ✅ 202 tests unitaires (143 en V1), comparé à des références indépendantes (astronomy-engine, JPL Horizons, cas de vérification SGP4 de Vallado) |
+| Vérification de bout en bout (rendu, navigation, terminateur, lunes, ISS, Soleil) | ✅ 50/50 contrôles dans Chromium (WebGL logiciel) |
 | Projet Android (WebView) pour Fire TV | ✅ code complet, compilé et signé |
 | Compilation de l'APK avec Gradle | ✅ réussie par l'intégration continue GitHub (plugin Android 8.7.3, Gradle 8.11.1) ; APK téléchargeable dans l'onglet *Actions* |
-| Essai sur un vrai Fire TV Stick | ❌ non réalisé (aucun appareil disponible) — voir [la liste des vérifications restantes](docs/TESTS.md#ce-qui-reste-à-vérifier-sur-le-fire-tv-réel) |
+| Essai sur un vrai Fire TV Stick | Version 1 : installée et utilisée par l'utilisateur sur un Fire TV Stick 3e génération (Fire OS 7.7.1.7), qualité maximale, fluide (retour de l'utilisateur). Version 2 : ❌ **pas encore testée sur l'appareil** — voir [la liste des vérifications restantes](docs/TESTS.md#ce-qui-reste-à-vérifier-sur-le-fire-tv-réel) |
 
 Détail des résultats : [docs/TESTS.md](docs/TESTS.md).
 
@@ -99,6 +123,7 @@ l'application depuis un autre appareil du réseau local.
 | `npm run build` | compilation de production dans `dist/` (nécessaire avant l'APK) |
 | `npm run preview` | sert la version compilée (`dist/`) |
 | `npm run test:e2e` | vérification de bout en bout dans Chromium (après `npm run build` et, une fois, `npx playwright install chromium`) |
+| `npm run data:iss` | met à jour les données de l'ISS (ordinateur connecté ; puis recompiler l'APK) |
 
 ### Paramètres d'adresse (démonstration, tests)
 
@@ -107,6 +132,7 @@ l'application depuis un autre appareil du réseau local.
 | `?t=2024-06-20T20:51:00Z` | démarre une simulation à cet instant (en pause) |
 | `&vitesse=3600` | démarre la simulation à ×3600 au lieu de la pause |
 | `&vue=terre` | ouvre directement la vue rapprochée d'une planète |
+| `&satellite=lune` | puis la vue d'un de ses satellites (`io`, `titan`, `iss`…) |
 | `&qualite=economy`, `standard` ou `high` | force un niveau de qualité |
 | `&debug=1` | affiche la cadence d'images et expose une API de test |
 
@@ -122,6 +148,9 @@ Exemple : http://localhost:5173/?t=2024-06-20T12:00:00Z&vue=terre (solstice d'é
 | Zoomer / dézoomer (vue rapprochée) | ⏩ / ⏪ | `+` / `-` ou Page préc. / suiv., molette |
 | Barre de commandes | ▼ (vue générale) ou OK (vue rapprochée), ou ☰ Menu | ↓ / Entrée, `M` |
 | Régions de la Terre | barre › « Régions » | idem |
+| Lunes / ISS | barre › « Satellites », ▲ ▼ puis OK | idem |
+| Revenir à la planète (vue d'un satellite) | Retour, ou barre › nom de la planète | Échap |
+| Montrer le Soleil (vue rapprochée) | barre › « Soleil » | idem |
 | Retour / fermer | Retour | Échap ou Retour arrière |
 | Pause / reprise du temps | ⏯ | Espace |
 | Ralentir / accélérer le temps (vue générale) | ⏪ / ⏩ | `-` / `+` |
@@ -156,7 +185,7 @@ Résumé (détails, compatibilité et dépannage : **[docs/FIRE-TV.md](docs/FIRE
 horloge-cosmique/
 ├── index.html, src/            application web (TypeScript)
 │   ├── astro/                  modèle astronomique (temps, éphémérides, repères, Terre)
-│   ├── data/                   données : éléments orbitaux, planètes, régions, étoiles
+│   ├── data/                   données : éléments orbitaux, planètes, lunes, ISS, régions, étoiles
 │   ├── representation/         passage des données astronomiques aux grandeurs visuelles
 │   ├── scene/                  moteur graphique Three.js (objets, shaders, textures)
 │   ├── camera/                 caméra : vue générale, transitions, orbite, régions
@@ -168,7 +197,7 @@ horloge-cosmique/
 │   └── app/                    orchestration, réglages, paramètres de démarrage
 ├── public/textures/            textures embarquées (provenance : docs/RESSOURCES.md)
 ├── tests/                      tests unitaires (Vitest)
-├── scripts/                    préparation des ressources, vérification de bout en bout
+├── scripts/                    préparation des ressources et des données (lunes, ISS), bout en bout
 ├── android/                    projet Android Studio (WebView) pour Fire TV
 ├── docs/                       documentation
 └── .github/workflows/          intégration continue (tests, APK)
@@ -184,10 +213,14 @@ horloge-cosmique/
 
 ## Licences
 
-- Textures des planètes et du Soleil : © Solar System Scope, **CC BY 4.0**
-  (attribution affichée dans l'application). Textures de la Terre : NASA,
-  domaine public. Catalogue d'étoiles : XHIP via d3-celestial (BSD-3-Clause).
-  Police Jost : SIL OFL 1.1. Détails : [docs/RESSOURCES.md](docs/RESSOURCES.md).
+- Textures des planètes, du Soleil et de la Lune : © Solar System Scope,
+  **CC BY 4.0** (attribution affichée dans l'application). Textures de la
+  Terre : NASA, domaine public. Cartes des lunes : NASA/JPL-Caltech/Space
+  Science Institute/Lunar and Planetary Institute (crédit obligatoire), USGS
+  Astrogeology (domaine public), NASA 3D Resources. Données : JPL Horizons,
+  NASA JSC. Propagateur SGP4 : satellite.js (MIT). Catalogue d'étoiles : XHIP
+  via d3-celestial (BSD-3-Clause). Police Jost : SIL OFL 1.1. Détails :
+  [docs/RESSOURCES.md](docs/RESSOURCES.md).
 - Aucune licence n'a encore été choisie pour le code de ce dépôt : par défaut,
   tous les droits sont réservés à son propriétaire. Ajoutez un fichier `LICENSE`
   si vous souhaitez autoriser sa réutilisation.

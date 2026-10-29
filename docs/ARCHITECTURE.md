@@ -54,11 +54,15 @@ Trois niveaux sont strictement séparés, comme l'exige le cahier des charges :
 | `src/astro/kepler.ts`, `ephemeris.ts` | équation de Kepler, éléments de Standish | tables 1 et 2a/2b, repère écliptique J2000 |
 | `src/astro/frames.ts`, `earth.ts` | repères, précession, temps sidéral | point subsolaire, hauteur du Soleil |
 | `src/astro/bodyRotation.ts` | orientation IAU des autres corps | pôles, méridiens, vitesses de rotation |
-| `src/astro/state.ts` | état complet à un instant | point d'entrée unique du modèle |
+| `src/astro/moon.ts`, `moons.ts` | Lune (Almanac), autres lunes (éléments ajustés sur JPL Horizons) | positions planétocentriques en km, orbites, inclinaison, sens, axes synchrones |
+| `src/astro/iss.ts`, `sgp4lib.ts` | ISS : SGP4 (satellite.js) et politique de validité | TEME → écliptique J2000 ; jamais de réseau |
+| `src/astro/sun.ts`, `shadow.ts` | taille apparente du Soleil, ombre des planètes | θ = 2·arcsin(D/2r) ; ombre et pénombre |
+| `src/astro/state.ts` | état complet à un instant | point d'entrée unique du modèle (lunes comprises) |
 | `src/representation/visualScale.ts` | distances et tailles affichées | interpolation monotone documentée |
 | `src/representation/sceneFrame.ts` | repère astro → repère Three.js | `(x, y, z) → (x, z, −y)` |
 | `src/representation/layout.ts` | mise en page des corps et orbites | sans Three.js, testable |
-| `src/scene/*` | objets 3D, shaders GLSL, textures | WebGL 1 et 2 |
+| `src/representation/satellites.ts`, `sunScale.ts` | distances et tailles affichées des satellites, taille du Soleil | direction exacte, compression logarithmique |
+| `src/scene/*` | objets 3D, shaders GLSL, textures | WebGL 1 et 2 ; `satellites.ts` : lunes, orbites, maquette de l'ISS |
 | `src/camera/cameraMath.ts`, `CameraRig.ts` | calculs et pilotage de caméra | orbite inertielle autour de l'axe de la planète |
 | `src/input/navigation.ts` | machine d'états de la télécommande | fonction pure, entièrement testée |
 | `src/time/TimeController.ts` | temps réel, pause, accélération | limite du domaine de validité |
@@ -136,12 +140,33 @@ rotation de la planète, et dont la référence d'azimut est fixe dans l'espace
 mouvements n'interviennent dans aucun calcul d'éclairage. Un test de bout en
 bout vérifie que pivoter la caméra ne change pas l'orientation du globe.
 
-### Vue rapprochée : autres corps estompés
+### Vue rapprochée : autres planètes estompées, Soleil à sa taille réelle
 
-Vus de près, les autres corps auraient des tailles et des distances apparentes
-trompeuses (leurs tailles visuelles ne sont pas à l'échelle). Ils sont donc
-estompés pendant la transition, puis masqués ; seules la planète observée et
-les étoiles restent. La direction de la lumière reste celle du vrai Soleil.
+Vues de près, les autres planètes auraient des tailles et des distances
+apparentes trompeuses (leurs tailles visuelles ne sont pas à l'échelle). Elles
+sont donc estompées pendant la transition, puis masquées ; restent la planète
+observée, ses satellites, les étoiles et — depuis la version 2 — le Soleil,
+affiché à sa taille apparente réelle vue de la planète (docs/MODELE-ASTRONOMIQUE.md,
+section 10). La direction de la lumière reste celle du vrai Soleil.
+
+### Satellites (version 2)
+
+- **Vue d'un satellite** : `NavState.satellite` (machine d'états) ; Retour
+  ramène à la planète, puis à la vue générale. La liste des satellites est
+  fournie par l'application (lunes de la planète, plus l'ISS pour la Terre
+  quand des données valables existent pour l'instant affiché).
+- **Caméra** : en vue d'un satellite, le repère accompagne le mouvement
+  orbital (haut = normale à l'orbite, azimut 0 = côté opposé à la planète) :
+  la planète reste derrière le satellite. Les transitions planète ↔ satellite
+  tournent autour du centre de la planète (`interpolatePoseAround`) et la
+  caméra est toujours maintenue hors de la planète (`keepOutsideSphere`) :
+  elle ne la traverse jamais.
+- **Calculs** : les positions des satellites du système observé sont
+  recalculées à chaque image (mouvement fluide, même en temps réel) ; les
+  orbites ne sont retracées que lorsque l'astre a parcouru plus de 1/400 de
+  sa période.
+- **Ombres** : fraction de lumière solaire (ombre/pénombre de la planète)
+  transmise aux shaders des lunes et de l'ISS.
 
 ## Performances (Fire TV)
 
@@ -149,7 +174,9 @@ les étoiles restent. La direction de la lumière reste celle du vrai Soleil.
 |---|---|
 | Pas de post-traitement | halo du Soleil par simple sprite additif, atmosphère par coque en faces arrière |
 | Pas d'ombres dynamiques | seule l'ombre de Saturne sur ses anneaux, calculée analytiquement dans le shader |
-| Textures limitées | 2048 px pour la Terre (4096 en qualité haute), 1024 px pour les autres corps ; nuages, océans et lumières regroupés dans une seule texture |
+| Textures limitées | 2048 px pour la Terre (4096 en qualité haute), 1024 px pour les autres corps et les lunes (2048 px pour la Lune) ; nuages, océans et lumières regroupés dans une seule texture |
+| Cartes des lunes à la demande | chargées à l'ouverture de la planète, libérées à l'ouverture d'une autre (au plus 7 cartes de 1024 px en mémoire, Saturne) |
+| Satellites seulement en vue rapprochée | la vue générale n'a aucun objet supplémentaire ; l'ISS : 2 appels de dessin (structure, panneaux) |
 | Résolution de rendu | plafonnée à 720, 1080 ou 2160 lignes physiques selon la qualité ; réduction dynamique jusqu'à 60 % si la cadence chute (qualité automatique) |
 | Cadence | 30 i/s en mode horloge, 60 i/s pendant les animations ; 20/30 i/s en qualité économie |
 | Calculs astronomiques | une fois par seconde en temps réel, à chaque image seulement en simulation rapide ; orbites recalculées tous les 30 jours simulés |

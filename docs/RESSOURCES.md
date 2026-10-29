@@ -18,6 +18,16 @@ télécharge rien pendant son fonctionnement.
 | `public/textures/mercury.jpg`, `venus.jpg`, `mars.jpg`, `jupiter.jpg`, `saturn.jpg`, `uranus.jpg`, `neptune.jpg`, `sun.jpg`, `saturn-ring.png` | Textures des planètes, du Soleil et des anneaux | Solar System Scope (d'après des données NASA) | **CC BY 4.0** — attribution obligatoire |
 | `src/data/stars.json` | 5 044 étoiles de magnitude ≤ 6 (position, magnitude, indice B−V) | Catalogue XHIP (Anderson & Francis 2012), via d3-celestial | Données : catalogue scientifique ; mise en forme d3-celestial © 2015 Olaf Frohn, **BSD-3-Clause** (texte : [`licences/d3-celestial-BSD-3-Clause.txt`](licences/d3-celestial-BSD-3-Clause.txt)) |
 | Police Jost (paquet npm `@fontsource/jost`) | Typographie de l'interface | © 2020 The Jost Project Authors* | SIL Open Font License 1.1 |
+| `public/textures/moons/moon.jpg` (V2) | Lune | Solar System Scope (d'après des données NASA), même miroir que les planètes | **CC BY 4.0** — attribution obligatoire |
+| `public/textures/moons/{io,europa,ganymede,callisto}.jpg` (V2) | Satellites galiléens | USGS Astrogeology Science Center ; NASA/JPL, missions Galileo et Voyager | Domaine public |
+| `public/textures/moons/{mimas,titan}.jpg` (V2) | Mimas, Titan | NASA/JPL-Caltech/Space Science Institute (Cassini) | Politique d'images NASA/JPL : **crédit obligatoire** |
+| `public/textures/moons/{enceladus,tethys,dione,rhea,iapetus}.jpg` (V2) | Lunes glacées de Saturne | NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute | Politique d'images NASA/JPL : **crédit obligatoire** |
+| `public/textures/moons/triton.jpg` (V2) | Triton | NASA/JPL-Caltech/Lunar & Planetary Institute (Voyager 2) | Politique d'images NASA/JPL : **crédit obligatoire** |
+| `public/textures/moons/{phobos,deimos,miranda,ariel,umbriel,titania,oberon}.jpg` (V2) | Lunes de Mars et d'Uranus | NASA 3D Resources (« free and without copyright ») | Ressources NASA, consignes d'usage des médias NASA |
+| `src/data/moonOrbits.json` (V2) | Éléments orbitaux ajustés de 21 lunes | Calculés par le projet à partir de vecteurs d'état JPL Horizons (NASA/JPL-Caltech SSD) distribués par les paquets npm `astraeus-data-*` | Données NASA/JPL (travail du gouvernement américain, crédit) ; paquets MIT ([`licences/astraeus-data-MIT.txt`](licences/astraeus-data-MIT.txt)) |
+| `src/data/iss.json` (V2) | Éléments SGP4 de l'ISS | Calculés par le projet à partir de l'éphéméride NASA JSC FOD/TOPO (`ISS.OEM_J2K_EPH.txt`) | Données NASA (travail du gouvernement américain) |
+| Paquet npm `satellite.js` 7.1.0 (V2, embarqué) | Propagateur SGP4 | Shashwat Kandadai et contributeurs (d'après D. Vallado) | **MIT** ([`licences/satellite.js-MIT.txt`](licences/satellite.js-MIT.txt)) |
+| `tests/fixtures/sgp4-verification.json` (V2, tests seulement) | Cas de vérification SGP4 | Vallado et al. 2006 (AIAA 2006-6753), fichiers du paquet Python `sgp4` 2.25 | Paquet MIT ([`licences/python-sgp4-MIT.txt`](licences/python-sgp4-MIT.txt)) |
 
 ## Attribution exigée (CC BY 4.0)
 
@@ -29,7 +39,9 @@ télécharge rien pendant son fonctionnement.
 > JPEG ; profil radial moyenné et réduit à 1024 × 4 pixels pour les anneaux.
 
 Cette attribution est également affichée dans l'application (panneau
-« Réglages », rubrique « Crédits »).
+« Réglages », rubrique « Crédits »), de même que les crédits NASA/JPL-Caltech
+/Space Science Institute/Lunar and Planetary Institute, USGS Astrogeology,
+NASA 3D Resources, JPL Horizons, NASA JSC et satellite.js (version 2).
 
 ## Détail des sources et des traitements
 
@@ -94,6 +106,65 @@ Bételgeuse, Véga).
 Les étoiles sont affichées à leur position réelle, dans le même repère
 (écliptique J2000) que les planètes.
 
+### Lunes : cartes (version 2)
+
+Sources récupérées par `scripts/moons/fetch-moon-texture-sources.sh`,
+transformées par `scripts/moons/prepare_moon_textures.py` (empreintes
+SHA-256 des 20 sources vérifiées) :
+
+- paquet npm `astraeus-data@0.3.0` (code MIT ; chaque image garde ses droits,
+  consignés par le paquet avec sa source) : cartes USGS des satellites
+  galiléens (mosaïques Galileo/Voyager, 2048 × 1024) et cartes Cassini de
+  Mimas (PIA17214), Encelade (PIA18435), Téthys (PIA18439), Dioné (PIA18434),
+  Rhéa (PIA18438), Japet (PIA18436), Titan (PIA19658), et carte Voyager 2 de
+  Triton (PIA18668) ;
+- dépôt `github.com/nasa/NASA-3D-Resources` (commit `11ebb4e`) : Phobos,
+  Déimos, Miranda, Ariel, Umbriel, Titania, Obéron ;
+- Lune : `moon.jpg` de Solar System Scope (CC BY 4.0), même miroir PyVista que
+  les planètes.
+
+Traitements :
+
+1. toutes les cartes sont ramenées à la convention des planètes (longitude 0°
+   au centre, longitudes est vers la droite). La convention de chaque source a
+   été **vérifiée sur des repères connus** : cratère Herschel (Mimas), cratère
+   Odysseus (Téthys), bassin Valhalla (Callisto), région sombre Galileo
+   (Ganymède), hémisphère arrière sombre d'Europe, falaises de l'hémisphère
+   arrière de Dioné et Rhéa, Cassini Regio (Japet), volcan Pele (Io), cratère
+   Stickney (Phobos) et cratère Wunda (Umbriel), ces deux derniers
+   approximativement ; Titan d'après l'étiquetage de
+   la carte (360° O au bord gauche). Les cartes centrées sur 180° sont décalées
+   d'une demi-largeur. L'orientation de la carte de Triton n'a pas pu être
+   vérifiée sur un repère ;
+2. **zones jamais photographiées** (nord des lunes d'Uranus : 56 à 62 % de la
+   carte ; nord de Triton : 38 % ; lacunes de Callisto et d'Europe) : remplies
+   par la teinte moyenne de la surface connue, sans relief inventé ;
+3. Titan : la carte d'albédo de surface (proche infrarouge) est teintée en
+   orange et atténuée à 14 % de contraste, car en lumière visible une brume
+   épaisse masque la surface ;
+4. redimensionnement en 1024 × 512 (2048 × 1024 pour la Lune), JPEG qualité 88.
+
+Protée et Néréide n'ont pas de carte globale publiée : elles sont affichées
+d'une couleur uniforme.
+
+### Lunes : orbites (version 2)
+
+Voir docs/MODELE-ASTRONOMIQUE.md, section 8. Sources : paquets npm
+`astraeus-data-{mars,jupiter,saturn,uranus,neptune}@0.3.0` (ajustements de
+Tchebychev de l'API JPL Horizons 1.2, éphémérides mar099, jup365, sat441,
+ura184, nep098, récupérées par leur auteur du 17 au 20 octobre 2026),
+empreintes SHA-256 dans `scripts/moons/fetch-horizons-fits.sh`. Rayons moyens
+et années de découverte : JPL SSD (*Planetary Satellite Physical Parameters*,
+*Discovery Circumstances*) ; pôles des plans de Laplace de Ganymède, Callisto,
+Titan et Japet : JPL SSD (*Planetary Satellite Mean Elements*), relevés dans
+le paquet `astraeus` 0.3.0 (consultés par son auteur le 17 octobre 2026).
+
+### ISS (version 2)
+
+Voir docs/MODELE-ASTRONOMIQUE.md, section 9 (source, date de création, date
+de récupération, empreinte, méthode, validité). Mise à jour :
+`npm run data:iss` sur un ordinateur connecté, puis recompilation.
+
 ## Régénérer les ressources
 
 ```bash
@@ -104,6 +175,15 @@ node scripts/build-stars.mjs .texture-sources/stars.6.json
 ```
 
 Le dossier `.texture-sources/` est ignoré par Git.
+
+Version 2 :
+
+```bash
+scripts/moons/fetch-moon-texture-sources.sh .moon-texture-sources
+python3 scripts/moons/prepare_moon_textures.py .moon-texture-sources public/textures/moons
+npm run data:moons     # éléments orbitaux des lunes (≈ 150 Mo téléchargés, quelques minutes)
+npm run data:iss       # éléments de l'ISS (éphéméride NASA du jour)
+```
 
 \* Police Jost : https://github.com/indestructible-type/Jost (OFL 1.1),
 distribuée par le projet Fontsource. Les fichiers de police sont intégrés au

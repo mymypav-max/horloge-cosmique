@@ -15,7 +15,8 @@ obtenus, et ce qui **n'a pas pu l'être**.
 - Outils Android des paquets Ubuntu 24.04 : aapt, dx (dalvik-exchange),
   zipalign, apksigner ; `android.jar` de l'API 35.
 
-Date des mesures : 29 octobre 2026.
+Date des mesures : 29 octobre 2026 (version 1, puis version 2 : lunes, ISS et
+taille apparente du Soleil, mesurée le même jour).
 
 ## Lancer les tests
 
@@ -26,9 +27,9 @@ npm run build        # compilation de production
 npm run test:e2e     # bout en bout (après « npx playwright install chromium »)
 ```
 
-## 1. Tests unitaires — 143 / 143 réussis
+## 1. Tests unitaires — 202 / 202 réussis
 
-`npm test` : 12 fichiers, 143 tests, durée ≈ 1,2 s.
+`npm test` : 17 fichiers, 202 tests (143 en version 1), durée ≈ 1,6 s.
 
 | Fichier | Tests | Contenu |
 |---|---|---|
@@ -38,12 +39,17 @@ npm run test:e2e     # bout en bout (après « npx playwright install chromium �
 | `earth.test.ts` | 15 | matrices orthonormées, obliquité, précession (2004,3″/siècle), temps sidéral à J2000 et exemple 12.a de Meeus, comparaison au temps sidéral apparent, jour sidéral, inclinaison de l'axe, point subsolaire aux solstices/équinoxes 2024–2030, solstice de juin 2024, 15°/h, 300 instants comparés à astronomy-engine (< 0,05°), terminateur à 90° exactement, jour/nuit à Paris, changement d'heure |
 | `bodyRotation.test.ts` | 15 | inclinaison des axes de 7 planètes (dont Vénus et Uranus rétrogrades), périodes de rotation, Jupiter en 9 h 55 min |
 | `representation.test.ts` | 10 | transformation radiale (points de contrôle, monotonie), **conservation exacte des directions héliocentriques**, absence de chevauchement 1800–2200, Jupiter imposante, repère de scène, planètes sur leurs orbites, **direction solaire du globe = point subsolaire**, axe terrestre incliné, planètes déplacées quand la date change |
-| `sceneGraph.test.ts` | 6 | scène Three.js sans GPU : présence des objets, lumière du shader terrestre conforme au point subsolaire (10⁻⁴ °), rotation du globe de 90,2° en 6 h, déplacement des planètes avec la date, anneaux de Saturne inclinés, estompage en vue rapprochée |
+| `sceneGraph.test.ts` | 6 | scène Three.js sans GPU : présence des objets, lumière du shader terrestre conforme au point subsolaire (10⁻⁴ °), rotation du globe de 90,2° en 6 h, déplacement des planètes avec la date, anneaux de Saturne inclinés, estompage des autres planètes en vue rapprochée (V2 : le Soleil reste visible, à sa taille apparente réelle — attente du test modifiée en conséquence, comme le demande la fonctionnalité B) |
 | `navigation.test.ts` | 20 | sélection des planètes, ouverture/fermeture de la vue rapprochée, flèches confiées à la caméra, zoom, barre d'actions, régions, réglages, touches multimédias, double appui sur Retour pour quitter, correspondance des touches (clavier, télécommande, codes Android) |
 | `cameraMath.test.ts` | 10 | repère orbital orthonormé, conversions direction ↔ angles, distance de caméra, indépendance vis-à-vis de la rotation du globe, limites d'élévation, courbe de transition, interpolation des poses, lissage indépendant de la cadence |
 | `timeController.test.ts` | 8 | temps réel, pause, accélération, changement de vitesse sans saut, paliers, retour à l'heure actuelle, démarrage à une date, arrêt à la limite du modèle |
 | `format.test.ts` | 8 | heure 24 h, date longue (« 1er »), années av. J.-C., nombres à la française, vitesses, décalages, coordonnées, périodes |
 | `app.test.ts` | 9 | paramètres d'adresse, réglages, détection de qualité (Fire TV, WebGL 1), taille de texture maximale, rendu 1920 × 1080 sur WebView 960 × 540 px CSS, résolution dynamique, saisons (à l'heure près autour de l'équinoxe) |
+| `moons.test.ts` (V2) | 19 | catalogue (22 lunes, aucune pour Mercure et Vénus), positions comparées aux vecteurs JPL Horizons (16 instants par lune, écart ≤ écart annoncé), périodes de l'en-tête Horizons (±0,5 %), 3e loi de Kepler (±1 %), **satellites galiléens contre la théorie E5 de Lieske** (< 0,3°), **Lune contre astronomy-engine** (< 0,4° et 0,4 % sur 1900–2100), distance Terre-Lune, Triton seule lune rétrograde, lunes d'Uranus directes, inclinaison de la Lune (≈ 5,1°), déterminisme, continuité (aucun saut, y compris aux bornes 2010 et 2030), sens du mouvement, orbite passant par la lune, extrapolation de −2999 à 2999 sans erreur numérique |
+| `iss.test.ts` (V2) | 10 | **cas de vérification officiels de SGP4 (Vallado 2006)** à 1 cm près, provenance des données, altitude/vitesse/période/inclinaison réalistes, écart à l'éphéméride NASA < 3 km, états de validité, aucune position hors limites (1990, +60 jours), déterminisme (pause), cohérence avec la vitesse (accélération), orbite passant par la station |
+| `sun.test.ts` (V2) | 7 | formule θ = 2·arcsin(D/2r), 0,524° à 0,542° vu de la Terre, **Mercure > Vénus > Terre > … > Neptune**, déterminisme, taille affichée = taille apparente réelle vue de la caméra, vue générale inchangée, transition sans saut, halo minimal |
+| `shadow.test.ts` (V2) | 4 | géométrie ombre/pénombre, éclipse totale de Lune du 14 mars 2025, Io dans l'ombre de Jupiter ≈ 5 % du temps, ISS dans l'ombre de la Terre (≤ 42 % de l'orbite) |
+| `satellites.test.ts` (V2) | 19 | représentation des satellites (échelle près de la planète puis compression, **direction exacte à 10⁻¹² rad : séparation données astronomiques / affichage**, lunes hors de la planète et des anneaux, ordre des tailles, ISS à l'échelle de la Terre, face synchrone tournée vers la planète), navigation (Mercure et Vénus sans satellites, liste, ouverture, Retour vers la planète puis vue générale, bouton « planète », vue « Soleil », ISS selon les données), caméra (transition qui contourne la planète, caméra repoussée hors de la planète, Soleil à 22° à gauche), fiches (lunes, ISS, ligne « Soleil vu d'ici »), mise en forme |
 
 Correspondance avec le cahier des charges :
 
@@ -57,6 +63,11 @@ Correspondance avec le cahier des charges :
 | Navigation, transitions | `navigation`, `cameraMath`, bout en bout |
 | Temps réel / simulé | `timeController`, bout en bout (bandeau « Simulation ») |
 | Effet réel d'un changement de date sur la scène | `representation`, `sceneGraph`, bout en bout |
+| (V2) Données des lunes, positions, mouvement, inclinaisons, sens | `moons`, `satellites` |
+| (V2) ISS : SGP4, repères, validité, cohérence temporelle | `iss`, `shadow`, bout en bout |
+| (V2) Taille apparente du Soleil | `sun`, bout en bout |
+| (V2) Séparation position astronomique / position affichée | `satellites`, `representation` |
+| (V2) Non-régression | les 143 tests de la version 1 (un seul changé : Soleil visible en vue rapprochée) et les 22 contrôles de bout en bout de la version 1 |
 
 ## 2. Précision mesurée du modèle
 
@@ -75,10 +86,53 @@ d'astronomy-engine (même instant TT), sur 2 000 instants :
 | Neptune | 72″ / 25″ | 521″ / 140″ |
 
 - Point subsolaire (1990–2043, 2 000 instants) : écart maximal **0,0099°**.
+- (V2) Lunes : écart au modèle JPL Horizons sur 2010–2030 de 0,0003° (Triton)
+  à 0,51° (Néréide), détail par lune dans docs/MODELE-ASTRONOMIQUE.md,
+  section 8 ; satellites galiléens contre la théorie E5 : 0,04° à 0,13°.
+- (V2) Lune : 0,36° et 0,31 % sur la distance au plus (1900–2100, 4 000
+  instants, contre astronomy-engine).
+- (V2) ISS : écart à l'éphéméride NASA 0,80 km (moyenne quadratique), 2,13 km
+  au plus pour les éléments SGP4 ; moins de 3 km dans l'application.
 - Temps sidéral moyen vs apparent : écart maximal **1,16 s** de temps
   (équation des équinoxes, volontairement négligée).
 
-## 3. Vérification de bout en bout — 22 / 22 réussis
+## 3. Vérification de bout en bout — 50 / 50 réussis
+
+Version 2 (22 contrôles de la version 1, inchangés et réussis, plus 28 ; extrait de la sortie, libellés et valeurs séparés par une espace pour la lisibilité) :
+
+```
+✔ Mercure : aucune entrée « Satellites » — zoomIn,zoomOut,recenter,sun,pause,slower,faster,now,overview
+✔ Vénus : aucune entrée « Satellites »
+✔ Jupiter : 4 lunes placées autour de la planète — io,europa,ganymede,callisto
+✔ liste des lunes de Jupiter — Io,Europe,Ganymède,Callisto
+✔ OK : vue d’Io — satellite Io
+✔ fiche d’Io en français (diamètre, distance, période, inclinaison) — Diamètre 3 643 km | Distance à Jupiter 423 500 km | Période orbitale 1 j 18 h 28 min | Inclinaison / équateur 0,04° | Sens du mouvement direct | …
+✔ Jupiter visible derrière Io, caméra hors de la planète — Jupiter couvre 23.6 % de l’image
+✔ Io cadrée au centre de l’image — Io couvre 8.9 % de l’image
+✔ Retour : retour à Jupiter — detail
+✔ Retour : vue générale, sans lune affichée
+✔ aucune erreur (lunes)
+✔ Saturne : 7 lunes, vue de Titan par l’adresse
+✔ vue de la Lune : Terre visible derrière — Terre 7.7 % de l’image
+✔ aucune erreur (Titan, Lune)
+✔ ISS affichée dans la vue de la Terre
+✔ ISS proposée pour la Terre seulement — moon,iss
+✔ sélection de l’ISS — iss satellite
+✔ fiche de l’ISS : altitude, vitesse, période, inclinaison, époque, validité — … Altitude calculée 424 km | Vitesse 7,66 km/s | Période orbitale 93,0 min | Inclinaison 51,6° | Éléments (époque) 28 octobre 2026, 12 h 00 UTC | Validité prévision NASA à jour
+✔ Terre visible derrière l’ISS — 30.4 % de l’image
+✔ ISS : immobile en pause, en mouvement quand le temps avance — pause 0, en marche 2.94e-2
+✔ en 1990, pas d’ISS : retour automatique à la Terre — detail, liste moon
+✔ plus de 30 jours après les données : pas d’ISS — moon
+✔ aucune erreur (ISS)
+✔ vue générale : taille du Soleil inchangée — 1.35
+✔ vue de la Terre : Soleil de 0,53° à 0,55° — 0.5365°
+✔ vue « Soleil » : Soleil visible à gauche de la Terre — x = 304 px, luminosité 187
+✔ vue de Neptune : Soleil d’environ 0,018° — 0.01784°
+✔ aucune erreur (Soleil)
+50/50 contrôles réussis.
+```
+
+Version 1 (22 / 22, toujours réussis en version 2) :
 
 `npm run test:e2e` (Chromium, WebGL SwiftShader, fenêtre 1920 × 1080) :
 
@@ -119,6 +173,10 @@ contrôle est refait.
 
 Les captures produites sont enregistrées dans `test-results/` (non versionné).
 
+« Couvre x % de l'image » : fraction d'une grille de 64 × 36 rayons issus de
+la caméra qui rencontrent la sphère de la planète (calcul géométrique, pas
+une lecture de pixels).
+
 ## 4. Vérifications visuelles
 
 Captures examinées pendant le développement (1920 × 1080 et Fire TV simulé
@@ -134,13 +192,25 @@ Simulation Fire TV (agent utilisateur « AFTKA », 960 × 540 px CSS, rapport 2)
 qualité « Standard » détectée automatiquement, image calculée en 1920 × 1080,
 aucune erreur.
 
+Version 2 (Chromium + SwiftShader, 1920 × 1080, 29 octobre 2026 à 18 h UTC
+sauf mention) : vue générale (inchangée), Terre (orbites de la Lune et de
+l'ISS, libellés), Lune devant la Terre, Phobos devant Mars, Jupiter et ses
+quatre lunes, Io devant Jupiter, Titan (brume orangée) devant Saturne et ses
+anneaux, Triton devant Neptune, liste « Lunes de Saturne », barre de Mercure
+sans « Satellites », vue « Soleil » depuis la Terre et Jupiter, ISS (au soleil
+à 18 h, dans l'ombre à 15 h 20), éclipse de Lune du 14 mars 2025 (Lune
+assombrie). Corrections apportées après examen : cadrage de l'ISS (la
+première version regardait trop vers le sol, texture terrestre trop agrandie),
+ISS et lunes désormais assombries dans l'ombre de leur planète, vue « Soleil »
+(Soleil trop près du bord du globe).
+
 ## 5. Compilation
 
 | Étape | Résultat |
 |---|---|
 | `npm run typecheck` | ✅ aucune erreur |
-| `npm run build` | ✅ `dist/` : 3,7 Mo dont JavaScript 684 Ko (196 Ko compressé), textures 2,8 Mo |
-| Syntaxe du JavaScript produit | ✅ analysable en ES2018 (Chromium ≥ 64) ; pas d'ES2019+ |
+| `npm run build` | ✅ V2 : `dist/` 6,6 Mo dont JavaScript 764 Ko (224 Ko compressé ; V1 : 684 Ko), textures 5,6 Mo (V1 : 2,8 Mo ; + 2,8 Mo de cartes des lunes) |
+| Syntaxe du JavaScript produit | ✅ analysable en ES2018 (Chromium ≥ 64) ; pas d'ES2019+ (V2 : `Array.prototype.flat`, `Object.fromEntries` et `Array.prototype.at` évités dans le code exécuté ; le module WebAssembly de satellite.js n'est pas inclus) |
 | Wrapper Gradle (`android/gradlew`) | ✅ télécharge Gradle 8.11.1, somme SHA-256 vérifiée, projet analysé |
 | `./gradlew assembleDebug` dans l'environnement de développement | ❌ **non exécutable** : le plugin Android Gradle 8.7.3 n'est publié que sur maven.google.com, inaccessible (refus du proxy réseau) |
 | `./gradlew assembleRelease` sur GitHub Actions | ✅ réussi (voir section 7) |
@@ -200,8 +270,30 @@ aucun appareil.
 
 ## Ce qui reste à vérifier sur le Fire TV réel
 
-À faire lors de la première installation (modèle exact : *Paramètres › Ma
-Fire TV › À propos*) :
+**Version 1** : installée et utilisée par l'utilisateur sur un Fire TV Stick
+3e génération (Fire OS 7.7.1.7), en qualité maximale, sans problème de
+fluidité signalé (retour de l'utilisateur, non mesuré ici).
+
+**Version 2** : **non testée sur le Fire TV**. À vérifier après installation
+du nouvel APK :
+
+- [ ] liste « Satellites » (◀ ▶ dans la barre, ▲ ▼ dans la liste, OK) pour
+  chaque planète ; aucune entrée pour Mercure et Vénus ;
+- [ ] vue d'une lune (Lune, Io, Titan…) : planète visible derrière, Retour
+  vers la planète puis vers la vue générale, transitions fluides ;
+- [ ] apparition des cartes des lunes à la première ouverture d'une planète
+  (chargement à la demande) et absence d'à-coup ; mémoire stable en passant
+  d'un système à l'autre ;
+- [ ] ISS : présente dans la vue de la Terre, sélection, maquette lisible,
+  Terre visible derrière, fiche « prévision NASA à jour » jusqu'au
+  12 novembre 2026, puis « approximative » / « indicative », et disparition
+  après le 12 décembre 2026 (sans mise à jour des données) ;
+- [ ] Soleil à sa taille apparente en vue rapprochée et action « Soleil » ;
+- [ ] cadence (*Réglages › Afficher la cadence*) en vue de Saturne (7 lunes)
+  et de l'ISS, en temps réel et en accélération ×86 400.
+
+Liste générale (version 1) — à refaire si besoin avec la version 2 (modèle
+exact : *Paramètres › Ma Fire TV › À propos*) :
 
 1. [x] Compilation de l'APK par GitHub Actions (réussie). [ ] Compilation sur
    votre PC avec Android Studio ou `./gradlew assembleDebug`.
