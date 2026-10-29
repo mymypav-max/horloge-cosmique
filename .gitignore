@@ -1,0 +1,26 @@
+# Dépendances et productions
+node_modules/
+dist/
+coverage/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log
+.vite/
+test-results/
+artifacts/
