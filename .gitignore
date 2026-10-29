@@ -24,3 +24,6 @@ Thumbs.db
 .vite/
 test-results/
 artifacts/
+
+# Sources des textures (régénérables, voir scripts/fetch-texture-sources.sh)
+.texture-sources/
