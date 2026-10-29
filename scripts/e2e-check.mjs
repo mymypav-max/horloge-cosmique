@@ -15,7 +15,14 @@
  *  6. fonctionnement sous l'origine locale de l'APK Android
  *     (https://appassets.androidplatform.net, mêmes types MIME que
  *     LocalAssetWebViewClient.java, tout autre hôte bloqué) et pont Android
- *     simulé (touche Retour, sortie, mise en arrière-plan).
+ *     simulé (touche Retour, sortie, mise en arrière-plan) ;
+ *  7. (V2) lunes : liste par planète, aucune pour Mercure et Vénus, vue
+ *     d'une lune avec sa planète visible derrière, retour à la planète ;
+ *  8. (V2) ISS : présente dans la vue de la Terre seulement, sélection,
+ *     Terre visible derrière, suivi du temps (pause, accélération),
+ *     disparition hors de la période de validité ;
+ *  9. (V2) taille apparente du Soleil dans les vues rapprochées (Terre,
+ *     Neptune), vue générale inchangée, vue « Soleil ».
  * Les captures sont enregistrées dans test-results/.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -319,6 +326,173 @@ try {
       `en pause : ${paused.rendering ? 'rendu actif' : 'rendu arrêté'} ; après reprise : ${s.rendering ? 'rendu actif' : 'rendu arrêté'}`,
     );
     await page.close();
+  }
+
+  // 7. Lunes (V2).
+  {
+    const T = '&t=2026-10-29T18:00:00Z';
+    const { page, errors } = await openPage(`${T}&vue=mercure`);
+    await page.waitForTimeout(2600);
+    await page.keyboard.press('Enter');
+    let items = await page.$$eval('.bar__item', (n) => n.map((e) => e.dataset.item));
+    check('Mercure : aucune entrée « Satellites »', !items.includes('satellites') && items.includes('sun'), items.join(','));
+    await page.close();
+
+    const venus = await openPage(`${T}&vue=venus`);
+    await venus.page.waitForTimeout(2600);
+    await venus.page.keyboard.press('Enter');
+    items = await venus.page.$$eval('.bar__item', (n) => n.map((e) => e.dataset.item));
+    check('Vénus : aucune entrée « Satellites »', !items.includes('satellites'), items.join(','));
+    await venus.page.close();
+
+    const jup = await openPage(`${T}&vue=jupiter`);
+    const p = jup.page;
+    await p.waitForTimeout(2600);
+    let s = await api(p, 'state');
+    check(
+      'Jupiter : 4 lunes placées autour de la planète',
+      ['io', 'europa', 'ganymede', 'callisto'].every((id) => s.satelliteLayouts[id]),
+      Object.keys(s.satelliteLayouts).join(','),
+    );
+    await p.keyboard.press('Enter'); // barre (1re entrée : Satellites)
+    await p.keyboard.press('Enter'); // liste
+    const names = await p.$$eval('.satellites .panel__item', (n) => n.map((e) => e.textContent));
+    check('liste des lunes de Jupiter', names.join(',') === 'Io,Europe,Ganymède,Callisto', names.join(','));
+    await p.keyboard.press('Enter'); // Io
+    await p.waitForTimeout(3500);
+    s = await api(p, 'state');
+    const io = s.satelliteLayouts.io;
+    const jupiter = s.planetPositions.jupiter;
+    check('OK : vue d’Io', s.satellite === 'io' && s.cameraMode === 'satellite' && s.title === 'Io', `${s.cameraMode} ${s.title}`);
+    check(
+      'fiche d’Io en français (diamètre, distance, période, inclinaison)',
+      ['Diamètre', 'Distance à Jupiter', 'Période orbitale', 'Inclinaison', 'Sens du mouvement'].every((l) => s.info.some((r) => r.startsWith(l))),
+      s.info.join(' | '),
+    );
+    const camToJupiter = Math.hypot(...s.cameraPosition.map((v, k) => v - jupiter[k]));
+    const coverage = await api(p, 'sphereCoverage', [...jupiter, 0.92]);
+    check('Jupiter visible derrière Io, caméra hors de la planète', coverage > 0.05 && camToJupiter > 0.92, `Jupiter couvre ${(coverage * 100).toFixed(1)} % de l’image`);
+    const ioCover = await api(p, 'sphereCoverage', [...io.position, io.radius]);
+    check('Io cadrée au centre de l’image', ioCover > 0.08, `Io couvre ${(ioCover * 100).toFixed(1)} % de l’image`);
+    await p.screenshot({ path: resolve(outDir, 'v2-io.png') });
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(3500);
+    s = await api(p, 'state');
+    check('Retour : retour à Jupiter', s.satellite === null && s.cameraMode === 'detail' && s.nav.detail === 'jupiter', `${s.cameraMode}`);
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(4000);
+    s = await api(p, 'state');
+    check('Retour : vue générale, sans lune affichée', s.cameraMode === 'overview' && Object.keys(s.satelliteLayouts).length === 0);
+    check('aucune erreur (lunes)', errors.length === 0 && jup.errors.length === 0, [...errors, ...jup.errors].join(' | '));
+    await p.close();
+
+    const sat = await openPage(`${T}&vue=saturne&satellite=titan`);
+    await sat.page.waitForTimeout(6500);
+    s = await api(sat.page, 'state');
+    check('Saturne : 7 lunes, vue de Titan par l’adresse', Object.keys(s.satelliteLayouts).length === 7 && s.satellite === 'titan', Object.keys(s.satelliteLayouts).join(','));
+    await sat.page.screenshot({ path: resolve(outDir, 'v2-titan.png') });
+    const moon = await openPage(`${T}&vue=terre&satellite=lune`);
+    await moon.page.waitForTimeout(6500);
+    s = await api(moon.page, 'state');
+    const earthCover = await api(moon.page, 'sphereCoverage', [...s.planetPositions.earth, 0.45]);
+    check('vue de la Lune : Terre visible derrière', s.satellite === 'moon' && earthCover > 0.02, `Terre ${(earthCover * 100).toFixed(1)} % de l’image`);
+    await moon.page.screenshot({ path: resolve(outDir, 'v2-lune.png') });
+    check('aucune erreur (Titan, Lune)', sat.errors.length === 0 && moon.errors.length === 0, [...sat.errors, ...moon.errors].join(' | '));
+    await sat.page.close();
+    await moon.page.close();
+  }
+
+  // 8. ISS (V2).
+  {
+    const { page, errors } = await openPage('&t=2026-10-29T18:00:00Z&vue=terre');
+    await page.waitForTimeout(2600);
+    let s = await api(page, 'state');
+    check('ISS affichée dans la vue de la Terre', s.issShown === true && !!s.satelliteLayouts.iss);
+    const list = await api(page, 'satellitesFor', ['earth']);
+    const listJupiter = await api(page, 'satellitesFor', ['jupiter']);
+    check('ISS proposée pour la Terre seulement', list.includes('iss') && !listJupiter.includes('iss'), list.join(','));
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight'); // Satellites (après Régions)
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowDown'); // ISS
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(3500);
+    s = await api(page, 'state');
+    check('sélection de l’ISS', s.satellite === 'iss' && s.cameraMode === 'satellite', `${s.satellite} ${s.cameraMode}`);
+    check(
+      'fiche de l’ISS : altitude, vitesse, période, inclinaison, époque, validité',
+      ['Altitude calculée', 'Vitesse', 'Période orbitale', 'Inclinaison', 'Éléments', 'Validité'].every((l) => s.info.some((r) => r.startsWith(l))) &&
+        s.info.some((r) => r.includes('prévision NASA')),
+      s.info.join(' | '),
+    );
+    const earthCover = await api(page, 'sphereCoverage', [...s.planetPositions.earth, 0.45]);
+    check('Terre visible derrière l’ISS', earthCover > 0.1, `${(earthCover * 100).toFixed(1)} % de l’image`);
+    await page.screenshot({ path: resolve(outDir, 'v2-iss.png') });
+    // Pause : position figée ; accélération : la station avance.
+    const a = (await api(page, 'state')).satelliteLayouts.iss.position;
+    await page.waitForTimeout(1000);
+    const b = (await api(page, 'state')).satelliteLayouts.iss.position;
+    const paused = Math.hypot(...a.map((v, k) => v - b[k]));
+    await page.keyboard.press(' '); // reprise
+    await page.keyboard.press('Enter');
+    for (let k = 0; k < 6; k++) await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter'); // Accélérer
+    await page.keyboard.press('Escape');
+    const c = (await api(page, 'state')).satelliteLayouts.iss.position;
+    await page.waitForTimeout(1000);
+    const d = (await api(page, 'state')).satelliteLayouts.iss.position;
+    const moving = Math.hypot(...c.map((v, k) => v - d[k]));
+    check('ISS : immobile en pause, en mouvement quand le temps avance', paused === 0 && moving > 0, `pause ${paused}, en marche ${moving.toExponential(2)}`);
+    // Hors de la période de validité : l'ISS disparaît et la vue revient à la Terre.
+    await api(page, 'jumpTo', [Date.UTC(1990, 0, 1), true]);
+    await page.waitForTimeout(3500);
+    s = await api(page, 'state');
+    const list1990 = await api(page, 'satellitesFor', ['earth']);
+    check(
+      'en 1990, pas d’ISS : retour automatique à la Terre',
+      s.issShown === false && s.satellite === null && !list1990.includes('iss') && s.cameraMode === 'detail',
+      `${s.cameraMode}, liste ${list1990.join(',')}`,
+    );
+    await api(page, 'jumpTo', [Date.UTC(2026, 11, 20), true]);
+    await page.waitForTimeout(500);
+    const listLate = await api(page, 'satellitesFor', ['earth']);
+    check('plus de 30 jours après les données : pas d’ISS', !listLate.includes('iss'), listLate.join(','));
+    check('aucune erreur (ISS)', errors.length === 0, errors.join(' | '));
+    await page.close();
+  }
+
+  // 9. Taille apparente du Soleil (V2).
+  {
+    const { page, errors } = await openPage('&t=2026-10-29T18:00:00Z');
+    let s = await api(page, 'state');
+    check('vue générale : taille du Soleil inchangée', Math.abs(s.sunRadius - 1.35) < 1e-9, `${s.sunRadius}`);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(3200);
+    s = await api(page, 'state');
+    const dEarth = Math.hypot(...s.cameraPosition);
+    const thetaEarth = (2 * Math.asin(s.sunRadius / dEarth) * 180) / Math.PI;
+    check('vue de la Terre : Soleil de 0,53° à 0,55°', thetaEarth > 0.53 && thetaEarth < 0.55, `${thetaEarth.toFixed(4)}°`);
+    // Vue « Soleil » : le Soleil apparaît à gauche du globe, dans l'image.
+    await page.keyboard.press('Enter');
+    for (let k = 0; k < 5; k++) await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(2600);
+    const sun = await api(page, 'projectScene', [0, 0, 0]);
+    const png = decodePng(await page.screenshot({ path: resolve(outDir, 'v2-soleil-terre.png') }));
+    check(
+      'vue « Soleil » : Soleil visible à gauche de la Terre',
+      sun.z < 1 && sun.x > 0 && sun.x < png.width / 2 && png.luminance(sun.x, sun.y, 1) > 180,
+      `x = ${sun.x.toFixed(0)} px, luminosité ${png.luminance(sun.x, sun.y, 1).toFixed(0)}`,
+    );
+    await page.close();
+    const nep = await openPage('&t=2026-10-29T18:00:00Z&vue=neptune');
+    await nep.page.waitForTimeout(3200);
+    s = await api(nep.page, 'state');
+    const dNep = Math.hypot(...s.cameraPosition);
+    const thetaNep = (2 * Math.asin(s.sunRadius / dNep) * 180) / Math.PI;
+    check('vue de Neptune : Soleil d’environ 0,018°', thetaNep > 0.017 && thetaNep < 0.0185, `${thetaNep.toFixed(5)}°`);
+    check('aucune erreur (Soleil)', errors.length === 0 && nep.errors.length === 0, [...errors, ...nep.errors].join(' | '));
+    await nep.page.close();
   }
 
   // Cadence observée (rendu logiciel SwiftShader : NON représentatif d'un Fire TV).

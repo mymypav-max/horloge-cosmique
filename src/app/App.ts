@@ -691,6 +691,23 @@ export class App {
         issShown: this.view.graph.satellites.issShown,
       }),
       satellitesFor: (planet: PlanetId) => this.satellitesFor(planet),
+      /** Fraction de l'image (grille de 64 × 36 rayons) occupée par une sphère de la scène. */
+      sphereCoverage: (cx: number, cy: number, cz: number, radius: number) => {
+        const camera = this.view.camera;
+        const origin = camera.position;
+        let hits = 0;
+        for (let j = 0; j < 36; j++) {
+          for (let i = 0; i < 64; i++) {
+            const dir = this.tmp.set(((i + 0.5) / 64) * 2 - 1, 1 - ((j + 0.5) / 36) * 2, 0.5).unproject(camera).sub(origin).normalize();
+            const ox = cx - origin.x;
+            const oy = cy - origin.y;
+            const oz = cz - origin.z;
+            const t = ox * dir.x + oy * dir.y + oz * dir.z;
+            if (t > 0 && ox * ox + oy * oy + oz * oz - t * t < radius * radius) hits++;
+          }
+        }
+        return hits / (64 * 36);
+      },
       projectScene: (x: number, y: number, z: number) => {
         const p = this.tmp.set(x, y, z).project(this.view.camera);
         return { x: (p.x * 0.5 + 0.5) * window.innerWidth, y: (-p.y * 0.5 + 0.5) * window.innerHeight, z: p.z };

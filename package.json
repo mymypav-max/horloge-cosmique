@@ -16,7 +16,9 @@
     "test:watch": "vitest",
     "test:e2e": "node scripts/e2e-check.mjs",
     "assets:stars": "node scripts/build-stars.mjs",
-    "assets:icons": "node scripts/build-android-icons.mjs"
+    "assets:icons": "node scripts/build-android-icons.mjs",
+    "data:iss": "sh scripts/iss/update-iss-data.sh",
+    "data:moons": "sh scripts/moons/fetch-horizons-fits.sh .horizons-fits && node scripts/moons/fit-moon-elements.mjs .horizons-fits src/data/moonOrbits.json"
   },
   "dependencies": {
     "@fontsource/jost": "5.3.0",

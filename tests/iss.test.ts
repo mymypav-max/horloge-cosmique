@@ -120,8 +120,8 @@ describe('cohérence temporelle de l’ISS', () => {
     for (const p of path) expect(norm(p)).toBeGreaterThan(6700);
   });
 
-  it('lit les éléments au format OMM de satellite.js', () => {
+  it('lit les éléments au format OMM de satellite.js (époque = début de l’éphéméride NASA)', () => {
     const omm = ISS_DATA.omm as unknown as OMMJsonObject;
-    expect(omm.EPOCH).toBe('2026-10-28T12:00:00.000');
+    expect(Date.parse(`${omm.EPOCH}Z`)).toBe(ISS_DATA_START_MS);
   });
 });

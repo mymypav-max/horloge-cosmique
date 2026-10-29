@@ -45,14 +45,19 @@ describe('ombre des planètes', () => {
   });
 
   it('fait passer l’ISS dans l’ombre de la Terre pendant une partie de son orbite', () => {
-    let dark = 0;
-    const n = 600;
-    for (let k = 0; k < n; k++) {
-      const t = ISS_DATA_START_MS + (k / n) * 93 * 60_000;
-      if (light('earth', issState(t)!.position, t) < 0.5) dark++;
+    // Fraction de chaque révolution passée dans l'ombre, sur la période des données : au plus environ 40 %
+    // (orbite dont le plan contient la direction du Soleil), parfois 0 (Soleil presque perpendiculaire au plan).
+    let maxDark = 0;
+    for (let day = 0; day < 14; day++) {
+      let dark = 0;
+      const n = 300;
+      for (let k = 0; k < n; k++) {
+        const t = ISS_DATA_START_MS + day * 86_400_000 + (k / n) * 93 * 60_000;
+        if (light('earth', issState(t)!.position, t) < 0.5) dark++;
+      }
+      expect(dark / n).toBeLessThan(0.42);
+      maxDark = Math.max(maxDark, dark / n);
     }
-    // Fin octobre 2026 (plan de l'orbite proche de la direction du Soleil) : environ 37 % de l'orbite dans l'ombre.
-    expect(dark / n).toBeGreaterThan(0.3);
-    expect(dark / n).toBeLessThan(0.42);
+    expect(maxDark).toBeGreaterThan(0.25);
   });
 });

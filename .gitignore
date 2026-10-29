@@ -27,3 +27,5 @@ artifacts/
 
 # Sources des textures (régénérables, voir scripts/fetch-texture-sources.sh)
 .texture-sources/
+.horizons-fits/
+.moon-texture-sources/
