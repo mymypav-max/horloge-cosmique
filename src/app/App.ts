@@ -43,7 +43,7 @@ const HINTS = {
   overview: '<kbd>◀</kbd><kbd>▶</kbd> Planète · <kbd>OK</kbd> Explorer · <kbd>▼</kbd> Commandes',
   bar: '<kbd>◀</kbd><kbd>▶</kbd> Choisir · <kbd>OK</kbd> Valider · <kbd>Retour</kbd> Fermer',
   detail:
-    '<kbd>◀</kbd><kbd>▶</kbd><kbd>▲</kbd><kbd>▼</kbd> Pivoter · <kbd>⏪</kbd><kbd>⏩</kbd> Zoom · <kbd>OK</kbd> Commandes · <kbd>Retour</kbd> Vue générale',
+    '<kbd>◀</kbd><kbd>▶</kbd><kbd>▲</kbd><kbd>▼</kbd> Pivoter · <kbd>◂◂</kbd><kbd>▸▸</kbd> Zoom · <kbd>OK</kbd> Commandes · <kbd>Retour</kbd> Vue générale',
   regions: '<kbd>▲</kbd><kbd>▼</kbd> Choisir · <kbd>OK</kbd> Centrer · <kbd>Retour</kbd> Fermer',
   settings: '<kbd>▲</kbd><kbd>▼</kbd> Choisir · <kbd>◀</kbd><kbd>▶</kbd> Modifier · <kbd>Retour</kbd> Fermer',
 };
