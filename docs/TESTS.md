@@ -259,7 +259,18 @@ commit `d565d14`) : **réussie**.
 | Tests et application web | ✅ `npm ci`, vérification des types, 143 tests unitaires, compilation, vérification de bout en bout **22/22** (Chromium sur le serveur GitHub, environ 18 i/s en rendu logiciel) |
 | APK Android (Fire TV) | ✅ `./gradlew assembleRelease` avec JDK 17 : `BUILD SUCCESSFUL in 1m 11s`, 44 tâches, contrôle `lintVitalRelease` sans erreur ; APK signé avec une clé de débogage propre à l'exécution (aucune clé personnelle configurée) |
 
-Artefacts produits : `horloge-cosmique-apk` (APK, 3,3 Mo compressé),
+**Version 2** : exécution n° 4 (29 octobre 2026, commit `7501acf`) :
+**réussie**.
+
+| Job | Résultat |
+|---|---|
+| Tests et application web | ✅ vérification des types, **202 tests unitaires**, compilation, vérification de bout en bout **50/50** (Chromium sur le serveur GitHub, 13,3 i/s en rendu logiciel) |
+| APK Android (Fire TV) | ✅ `./gradlew assembleRelease` : `BUILD SUCCESSFUL in 1m 9s`, 44 tâches ; artefact `horloge-cosmique-apk` de 6 180 812 octets (compressé ; 3,3 Mo en version 1, la différence venant des cartes des lunes) |
+
+L'APK de la version 2 n'a pas été installé sur un appareil depuis
+l'environnement de développement.
+
+Version 1 — artefacts produits : `horloge-cosmique-apk` (APK, 3,3 Mo compressé),
 `application-web`, `resultats-e2e` (captures). Seul avertissement : les actions
 GitHub en version 4 utilisent Node.js 20, déprécié (exécutées sous Node.js 24
 par GitHub) ; sans effet sur le résultat.
