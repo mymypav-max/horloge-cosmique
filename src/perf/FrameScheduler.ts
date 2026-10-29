@@ -30,6 +30,10 @@ export class FrameScheduler {
     cancelAnimationFrame(this.handle);
   }
 
+  get isRunning(): boolean {
+    return this.running;
+  }
+
   private tick = (now: number): void => {
     if (!this.running) return;
     this.handle = requestAnimationFrame(this.tick);

@@ -11,10 +11,14 @@
  *  3. cohérence du terminateur RENDU : la luminosité des pixels du globe
  *     correspond au jour / à la nuit calculés par le modèle astronomique ;
  *  4. un changement d'heure déplace réellement le terminateur à l'écran ;
- *  5. indication explicite du mode simulation.
+ *  5. indication explicite du mode simulation ;
+ *  6. fonctionnement sous l'origine locale de l'APK Android
+ *     (https://appassets.androidplatform.net, mêmes types MIME que
+ *     LocalAssetWebViewClient.java, tout autre hôte bloqué) et pont Android
+ *     simulé (touche Retour, sortie, mise en arrière-plan).
  * Les captures sont enregistrées dans test-results/.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
@@ -87,6 +91,22 @@ function decodePng(buffer) {
       return n ? sum / n : 0;
     },
   };
+}
+
+/** Copie de LocalAssetWebViewClient.mimeType (Java). */
+function androidMimeType(path) {
+  const p = path.toLowerCase();
+  if (p.endsWith('.html')) return 'text/html';
+  if (p.endsWith('.js') || p.endsWith('.mjs')) return 'text/javascript';
+  if (p.endsWith('.css')) return 'text/css';
+  if (p.endsWith('.json')) return 'application/json';
+  if (p.endsWith('.jpg') || p.endsWith('.jpeg')) return 'image/jpeg';
+  if (p.endsWith('.png')) return 'image/png';
+  if (p.endsWith('.svg')) return 'image/svg+xml';
+  if (p.endsWith('.woff2')) return 'font/woff2';
+  if (p.endsWith('.woff')) return 'font/woff';
+  if (p.endsWith('.ico')) return 'image/x-icon';
+  return 'application/octet-stream';
 }
 
 const results = [];
@@ -243,6 +263,61 @@ try {
     const badge = await page.textContent('.clock__badge');
     check('mode simulation signalé à l’écran', /Simulation/.test(badge ?? ''), badge ?? '');
     check('aucune erreur (terminateur)', errors.length === 0, errors.join(' | '));
+    await page.close();
+  }
+
+  // 6. Environnement de l'APK Android simulé.
+  {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const errors = [];
+    const missing = [];
+    const external = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    await page.addInitScript(() => {
+      window.__bridgeCalls = [];
+      window.AndroidBridge = { exitApp: () => window.__bridgeCalls.push('exitApp') };
+    });
+    await page.route('**/*', async (route) => {
+      const url = new URL(route.request().url());
+      if (url.protocol !== 'https:' || url.host !== 'appassets.androidplatform.net') {
+        external.push(url.href);
+        return route.abort();
+      }
+      const path = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
+      const file = resolve(root, `dist${path}`);
+      if (!existsSync(file)) {
+        missing.push(path);
+        return route.fulfill({ status: 404, body: '' });
+      }
+      return route.fulfill({ status: 200, contentType: androidMimeType(path), body: readFileSync(file) });
+    });
+    await page.goto('https://appassets.androidplatform.net/index.html?debug=1');
+    await page.waitForFunction(() => !!window.__horlogeCosmique, null, { timeout: 30_000 });
+    await page.waitForTimeout(1500);
+    check(
+      'chargement depuis l’origine locale de l’APK, sans aucun accès externe',
+      missing.length === 0 && external.length === 0 && errors.length === 0,
+      `fichiers manquants : ${missing.length}, requêtes externes : ${external.length}, erreurs : ${errors.join(' | ')}`,
+    );
+    const r1 = await page.evaluate(() => window.HorlogeCosmique.key('back'));
+    const r2 = await page.evaluate(() => window.HorlogeCosmique.key('back'));
+    const calls = await page.evaluate(() => window.__bridgeCalls);
+    check('Retour ×2 en vue générale : sortie demandée à Android', r1 === 'ok' && r2 === 'ok' && calls.includes('exitApp'));
+    await page.evaluate(() => window.HorlogeCosmique.key('menu'));
+    let s = await api(page, 'state');
+    check('touche Menu relayée : barre d’actions ouverte', s.nav.layer === 'bar');
+    await page.evaluate(() => window.HorlogeCosmique.key('back'));
+    await page.evaluate(() => window.HorlogeCosmique.lifecycle('pause'));
+    const paused = await api(page, 'state');
+    await page.evaluate(() => window.HorlogeCosmique.lifecycle('resume'));
+    await page.waitForTimeout(1500);
+    s = await api(page, 'state');
+    check(
+      'mise en arrière-plan : rendu suspendu puis repris',
+      paused.rendering === false && s.rendering === true && errors.length === 0,
+      `en pause : ${paused.rendering ? 'rendu actif' : 'rendu arrêté'} ; après reprise : ${s.rendering ? 'rendu actif' : 'rendu arrêté'}`,
+    );
     await page.close();
   }
 

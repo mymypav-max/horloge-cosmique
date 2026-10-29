@@ -1,0 +1,90 @@
+# Intégration continue : tests, compilation web et compilation de l'APK Fire TV.
+#
+# - À chaque envoi sur main : tests unitaires, vérification de bout en bout,
+#   compilation web et APK (téléchargeable dans l'onglet « Actions »).
+# - À la publication d'une « release » GitHub : l'APK est joint à la release,
+#   ce qui donne une adresse de téléchargement directe pour le Fire TV :
+#   https://github.com/<propriétaire>/<dépôt>/releases/latest/download/horloge-cosmique.apk
+name: Construction
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Tests et application web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Navigateur pour la vérification de bout en bout
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        with:
+          name: application-web
+          path: dist/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultats-e2e
+          path: test-results/
+
+  android:
+    name: APK Android (Fire TV)
+    needs: web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # Les secrets ne sont pas lisibles dans les conditions « if » : on passe par l'environnement.
+      HC_KEYSTORE_BASE64: ${{ secrets.HC_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: application-web
+          path: dist/
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Clé de signature personnelle (facultative)
+        if: env.HC_KEYSTORE_BASE64 != ''
+        run: |
+          echo "$HC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/horloge.jks"
+          echo "HC_KEYSTORE_FILE=$RUNNER_TEMP/horloge.jks" >> "$GITHUB_ENV"
+      - name: Compilation de l'APK
+        working-directory: android
+        env:
+          HC_KEYSTORE_PASSWORD: ${{ secrets.HC_KEYSTORE_PASSWORD }}
+          HC_KEY_ALIAS: ${{ secrets.HC_KEY_ALIAS }}
+          HC_KEY_PASSWORD: ${{ secrets.HC_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../horloge-cosmique.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horloge-cosmique-apk
+          path: horloge-cosmique.apk
+      - name: Joindre l'APK à la release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" horloge-cosmique.apk --clobber

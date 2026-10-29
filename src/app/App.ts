@@ -480,6 +480,7 @@ export class App {
         time: this.time.snapshot(),
         subsolar: this.astro.earth.subsolar,
         fps: this.measuredFps,
+        rendering: this.scheduler.isRunning,
         renderScale: this.view.getRenderScale(),
         quality: this.quality.level,
         earthQuaternion: this.view.graph.earth.spin.quaternion.toArray(),
