@@ -80,8 +80,8 @@ pour l'heure qu'il est**.
 | Élément | État |
 |---|---|
 | Application web (TypeScript, Vite, Three.js) | ✅ fonctionnelle, testée dans Chromium |
-| Modèle astronomique | ✅ 213 tests unitaires (143 en V1), comparé à des références indépendantes (astronomy-engine, JPL Horizons, cas de vérification SGP4 de Vallado) |
-| Vérification de bout en bout (rendu, navigation, terminateur, lunes, ISS, Soleil) | ✅ 61/61 contrôles dans Chromium (WebGL logiciel) |
+| Modèle astronomique | ✅ 215 tests unitaires (143 en V1), comparé à des références indépendantes (astronomy-engine, JPL Horizons, cas de vérification SGP4 de Vallado) |
+| Vérification de bout en bout (rendu, navigation, terminateur, lunes, ISS, Soleil) | ✅ 62/62 contrôles dans Chromium (WebGL logiciel) |
 | Projet Android (WebView) pour Fire TV | ✅ code complet, compilé et signé |
 | Compilation de l'APK avec Gradle | ✅ réussie par l'intégration continue GitHub (plugin Android 8.7.3, Gradle 8.11.1) ; APK téléchargeable dans l'onglet *Actions* |
 | Essai sur un vrai Fire TV Stick | Version 1 : installée et utilisée par l'utilisateur sur un Fire TV Stick 3e génération (Fire OS 7.7.1.7), qualité maximale, fluide (retour de l'utilisateur). Version 2 : ❌ **pas encore testée sur l'appareil** — voir [la liste des vérifications restantes](docs/TESTS.md#ce-qui-reste-à-vérifier-sur-le-fire-tv-réel) |

@@ -29,9 +29,9 @@ npm run build        # compilation de production
 npm run test:e2e     # bout en bout (après « npx playwright install chromium »)
 ```
 
-## 1. Tests unitaires — 213 / 213 réussis
+## 1. Tests unitaires — 215 / 215 réussis
 
-`npm test` : 17 fichiers, 213 tests (143 en version 1, 202 avant la
+`npm test` : 17 fichiers, 215 tests (143 en version 1, 202 avant la
 consolidation de la version 2), durée ≈ 1,9 s.
 
 | Fichier | Tests | Contenu |
@@ -52,7 +52,7 @@ consolidation de la version 2), durée ≈ 1,9 s.
 | `iss.test.ts` (V2) | 16 | **cas de vérification officiels de SGP4 (Vallado 2006)** à 1 cm près, provenance des données, altitude/vitesse/période/inclinaison réalistes, écart à l'éphéméride NASA < 3 km ; **règle de validité** (consolidation) : nominale jusqu'au dernier instant de la prévision compris, extrapolation dès la première minute après, jusqu'au dernier instant du 7e jour, ISS masquée à l'instant suivant (données expirées), aucune position au-delà (y compris 12 décembre 2026, ancien seuil de 30 jours, et 2030), plafond de 14 jours respecté, même règle avant la prévision, aucune ISS avant le 20 novembre 1998 ; déterminisme (pause), cohérence avec la vitesse (accélération), orbite passant par la station |
 | `sun.test.ts` (V2) | 7 | formule θ = 2·arcsin(D/2r), 0,524° à 0,542° vu de la Terre, **Mercure > Vénus > Terre > … > Neptune**, déterminisme, taille affichée = taille apparente réelle vue de la caméra, vue générale inchangée, transition sans saut, halo minimal |
 | `shadow.test.ts` (V2) | 4 | géométrie ombre/pénombre, éclipse totale de Lune du 14 mars 2025, Io dans l'ombre de Jupiter ≈ 5 % du temps, ISS dans l'ombre de la Terre (≤ 42 % de l'orbite) |
-| `satellites.test.ts` (V2) | 24 | représentation des satellites (échelle près de la planète puis compression, **direction exacte à 10⁻¹² rad : séparation données astronomiques / affichage**, lunes hors de la planète et des anneaux, ordre des tailles, ISS à l'échelle de la Terre, face synchrone tournée vers la planète), navigation (Mercure et Vénus sans satellites, liste, ouverture, Retour vers la planète puis vue générale, bouton « planète », vue « Soleil », ISS selon les données), caméra (transition qui contourne la planète, caméra repoussée hors de la planète, Soleil à 22° à gauche), fiches (lunes, ISS, ligne « Soleil vu d'ici »), mise en forme ; consolidation : **orientation des cartes sur le maillage réel** (longitude 0 vers la planète, nord IAU en haut, longitude 90° E dans le sens direct, y compris pour les rotations rétrogrades), **mentions de représentation** des 22 lunes (seules les réserves pertinentes), fiche de l'ISS « Prévision NASA du 28 octobre 2026 » avec écart mesuré par rapport à la prévision, « Extrapolation » sans précision garantie, explications quand l'ISS est masquée |
+| `satellites.test.ts` (V2) | 26 | représentation des satellites (échelle près de la planète puis compression, **direction exacte à 10⁻¹² rad : séparation données astronomiques / affichage**, lunes hors de la planète et des anneaux, ordre des tailles, ISS à l'échelle de la Terre, face synchrone tournée vers la planète), navigation (Mercure et Vénus sans satellites, liste, ouverture, Retour vers la planète puis vue générale, bouton « planète », vue « Soleil », ISS selon les données), caméra (transition qui contourne la planète, caméra repoussée hors de la planète, Soleil à 22° à gauche), fiches (lunes, ISS, ligne « Soleil vu d'ici »), mise en forme ; consolidation : **orientation des cartes sur le maillage réel** (longitude 0 vers la planète, nord IAU en haut, longitude 90° E dans le sens direct, y compris pour les rotations rétrogrades), **mentions de représentation** des 22 lunes (seules les réserves pertinentes), fiche de l'ISS « Prévision NASA du 28 octobre 2026 » avec écart mesuré par rapport à la prévision, « Extrapolation » sans précision garantie, explications quand l'ISS est masquée ; **rotation de la caméra aux flèches** : acceptée seulement en vue stable d'une planète ou d'un satellite (ni en vue générale ni pendant les transitions), rotation autour du satellite à distance constante, arrêt au relâchement |
 
 Correspondance avec le cahier des charges :
 
@@ -101,13 +101,20 @@ d'astronomy-engine (même instant TT), sur 2 000 instants :
 - Temps sidéral moyen vs apparent : écart maximal **1,16 s** de temps
   (équation des équinoxes, volontairement négligée).
 
-## 3. Vérification de bout en bout — 61 / 61 réussis
+## 3. Vérification de bout en bout — 62 / 62 réussis
 
 Consolidation de la version 2 (30 octobre 2026) : 22 contrôles de la version 1
 et 39 de la version 2, tous réussis. Les 2 anciens contrôles de validité de
 l'ISS (1990, « plus de 30 jours ») ont été remplacés par 13 contrôles de la
 nouvelle règle ; l'attente de la fiche de l'ISS suit le nouveau libellé
 (« Prévision NASA du 28 octobre 2026 » au lieu de « prévision NASA à jour »).
+Correction de la navigation (30 octobre 2026) : un 62e contrôle vérifie que
+les flèches font pivoter la caméra en vue d'un satellite (Io : 104,8° après
+1,6 s d'appui). Exécuté sans la correction, ce contrôle échoue (rotation
+0,0°, 61/62) ; avec la correction, 62/62. Les contrôles existants des
+flèches dans les autres contextes restent réussis : sélection de la planète
+en vue générale, rotation autour du globe en vue d'une planète, navigation
+dans les listes.
 Extrait de la sortie (`npm run test:e2e`, Chromium, WebGL SwiftShader) :
 
 ```
@@ -119,6 +126,7 @@ Extrait de la sortie (`npm run test:e2e`, Chromium, WebGL SwiftShader) :
 ✔ fiche d’Io en français (diamètre, distance, période, inclinaison) — Diamètre3 643 km | Distance à Jupiter423 500 km | Période orbitale1 j 18 h 28 min | Inclinaison / équateur0,04° | Sens du mouvementdirect | Excentricité0,0041 | Découverte1610 (Galilée)
 ✔ Jupiter visible derrière Io, caméra hors de la planète — Jupiter couvre 23.6 % de l’image
 ✔ Io cadrée au centre de l’image — Io couvre 8.9 % de l’image
+✔ flèches en vue d’un satellite : la caméra pivote autour d’Io, qui reste sélectionnée — rotation 104.8°, satellite
 ✔ Retour : retour à Jupiter — detail
 ✔ Retour : vue générale, sans lune affichée
 ✔ aucune erreur (lunes)
@@ -150,7 +158,7 @@ Extrait de la sortie (`npm run test:e2e`, Chromium, WebGL SwiftShader) :
 ✔ vue « Soleil » : Soleil visible à gauche de la Terre — x = 304 px, luminosité 187
 ✔ vue de Neptune : Soleil d’environ 0,018° — 0.01784°
 ✔ aucune erreur (Soleil)
-61/61 contrôles réussis.
+62/62 contrôles réussis.
 ```
 
 Version 1 (22 / 22, toujours réussis en version 2) :
@@ -246,11 +254,16 @@ Consolidation (30 octobre 2026, 1280 × 720) :
   « Satellites de la Terre » réduite à la Lune avec l'explication (20 novembre) ;
 - 24 vues, toutes les cartes chargées (HTTP 200), aucune erreur JavaScript.
 
-Anomalie relevée pendant ces vérifications, **non corrigée** (hors du
-périmètre des cinq corrections) : en vue d'un satellite, les flèches ne font
-pas pivoter la caméra, alors que l'aide affiche « Pivoter » (la commande
-n'est transmise à la caméra qu'en vue d'une planète, `src/app/App.ts`). La
-caméra montre donc toujours l'hémisphère de la lune opposé à sa planète.
+Anomalie relevée pendant ces vérifications, **corrigée ensuite** (avec
+l'accord de l'utilisateur) : en vue d'un satellite, les flèches ne faisaient
+pas pivoter la caméra, alors que l'aide affiche « Pivoter ». Cause : dans
+`src/app/App.ts`, la commande des flèches n'était transmise à la caméra qu'en
+mode « detail » (vue d'une planète), alors que la caméra sait pivoter en mode
+« satellite ». Correction : la condition est remplacée par
+`CameraRig.acceptsRotationInput` (vue stable d'une planète **ou** d'un
+satellite) ; les transitions, la vue générale et les menus ne sont pas
+modifiés. Tests : 2 tests unitaires (`satellites.test.ts`) et 1 contrôle de
+bout en bout.
 
 ## 5. Compilation
 
@@ -351,8 +364,8 @@ du nouvel APK :
   accélérant le temps ou en changeant de date) ; heure du Fire TV correcte ;
 - [ ] fiches des lunes : ligne « Représentation » lisible à distance (Déimos,
   lunes d'Uranus, Protée, Titan…) ; Déimos sans plage gris clair ni raccord ;
-- [ ] en vue d'un satellite, les flèches ne pivotent pas la caméra (anomalie
-  connue, voir section 4) : le confirmer sur l'appareil ;
+- [ ] en vue d'une lune ou de l'ISS, maintien des flèches : la caméra pivote
+  autour du satellite (correction du 30 octobre 2026, section 4) ;
 - [ ] Soleil à sa taille apparente en vue rapprochée et action « Soleil » ;
 - [ ] cadence (*Réglages › Afficher la cadence*) en vue de Saturne (7 lunes)
   et de l'ISS, en temps réel et en accélération ×86 400.

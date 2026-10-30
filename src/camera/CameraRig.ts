@@ -92,6 +92,11 @@ export class CameraRig {
       Math.abs(this.targetDistance - this.params.distance) > 1e-3 * this.params.distance;
   }
 
+  /** Vue stable où les flèches font pivoter la caméra : planète observée ou satellite (lune, ISS). */
+  get acceptsRotationInput(): boolean {
+    return this.mode === 'detail' || this.mode === 'satellite';
+  }
+
   /** Commande continue de rotation (−1, 0, 1 sur chaque axe). */
   setRotationInput(h: number, v: number): void {
     this.input = { h, v };

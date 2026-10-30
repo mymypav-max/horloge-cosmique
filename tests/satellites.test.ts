@@ -245,6 +245,69 @@ describe('caméra des vues rapprochées', () => {
   });
 });
 
+describe('rotation de la caméra aux flèches', () => {
+  const layouts = layoutBodies(computeAstroState(T));
+  const jupiter = layouts.jupiter;
+  // Io, à 3 rayons de Jupiter, rayon affiché 0,05 (seule la géométrie compte ici).
+  const io = {
+    id: 'io' as const,
+    parent: 'jupiter' as const,
+    position: [jupiter.position[0] + 3 * jupiter.radius, jupiter.position[1], jupiter.position[2]] as Vec3,
+    radius: 0.05,
+    orientation: [1, 0, 0, 0, 1, 0, 0, 0, 1] as [number, number, number, number, number, number, number, number, number],
+    sunDirection: jupiter.sunDirection,
+    orbitNormal: [0, 1, 0] as Vec3,
+  };
+  const run = (rig: CameraRig, from: number, seconds: number, h = 0) => {
+    let now = from;
+    for (let k = 0; k < seconds * 30; k++) {
+      now += 1000 / 30;
+      rig.setRotationInput(h, 0);
+      rig.update(1 / 30, now, 16 / 9, layouts, { io });
+    }
+    return now;
+  };
+  const camera = (rig: CameraRig): Vec3 => (rig as unknown as { camera: PerspectiveCamera }).camera.position.toArray() as Vec3;
+
+  it('n’accepte la rotation qu’en vue stable d’une planète ou d’un satellite (pas en vue générale ni pendant les transitions)', () => {
+    const rig = new CameraRig(new PerspectiveCamera(36, 16 / 9, 0.01, 100));
+    expect(rig.mode).toBe('overview');
+    expect(rig.acceptsRotationInput).toBe(false);
+    rig.openPlanet(jupiter, 0);
+    expect(rig.mode).toBe('toDetail');
+    expect(rig.acceptsRotationInput).toBe(false);
+    let now = run(rig, 0, 3);
+    expect(rig.mode).toBe('detail');
+    expect(rig.acceptsRotationInput).toBe(true);
+    rig.openSatellite(io, jupiter, now);
+    expect(rig.mode).toBe('toSatellite');
+    expect(rig.acceptsRotationInput).toBe(false);
+    now = run(rig, now, 3);
+    expect(rig.mode).toBe('satellite');
+    expect(rig.acceptsRotationInput).toBe(true);
+  });
+
+  it('fait pivoter la caméra autour du satellite observé, à distance constante, et s’arrête au relâchement', () => {
+    const rig = new CameraRig(new PerspectiveCamera(36, 16 / 9, 0.01, 100));
+    rig.openPlanet(jupiter, 0);
+    let now = run(rig, 0, 3);
+    rig.openSatellite(io, jupiter, now);
+    now = run(rig, now, 3);
+    expect(rig.mode).toBe('satellite');
+    const before = sub(camera(rig), io.position);
+    now = run(rig, now, 1.5, 1); // flèche droite maintenue 1,5 s
+    const after = sub(camera(rig), io.position);
+    expect(angleBetween(before, after) / (Math.PI / 180)).toBeGreaterThan(20);
+    expect(norm(after)).toBeCloseTo(norm(before), 6);
+    expect(rig.satellite).toBe('io');
+    // Relâchement : la caméra ralentit puis s'immobilise (aucune dérive).
+    now = run(rig, now, 2, 0);
+    const still = sub(camera(rig), io.position);
+    run(rig, now, 1, 0);
+    expect(angleBetween(still, sub(camera(rig), io.position)) / (Math.PI / 180)).toBeLessThan(0.05);
+  });
+});
+
 describe('fiches d’information', () => {
   const state = computeAstroState(T);
 

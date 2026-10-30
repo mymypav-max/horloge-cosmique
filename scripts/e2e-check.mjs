@@ -17,7 +17,8 @@
  *     LocalAssetWebViewClient.java, tout autre hôte bloqué) et pont Android
  *     simulé (touche Retour, sortie, mise en arrière-plan) ;
  *  7. (V2) lunes : liste par planète, aucune pour Mercure et Vénus, vue
- *     d'une lune avec sa planète visible derrière, retour à la planète ;
+ *     d'une lune avec sa planète visible derrière, rotation de la caméra aux
+ *     flèches autour de la lune, retour à la planète ;
  *  8. (V2) ISS : présente dans la vue de la Terre seulement, sélection,
  *     Terre visible derrière, suivi du temps (pause, accélération), règle
  *     de validité (prévision NASA, extrapolation 7 jours, puis ISS masquée
@@ -377,6 +378,25 @@ try {
     const ioCover = await api(p, 'sphereCoverage', [...io.position, io.radius]);
     check('Io cadrée au centre de l’image', ioCover > 0.08, `Io couvre ${(ioCover * 100).toFixed(1)} % de l’image`);
     await p.screenshot({ path: resolve(outDir, 'v2-io.png') });
+    // Flèches en vue d'un satellite : la caméra pivote autour de la lune (appui maintenu, répétition simulée).
+    const rel = (st) => st.cameraPosition.map((v, k) => v - st.satelliteLayouts.io.position[k]);
+    const angle = (a, b) => (Math.acos(Math.min(1, a.reduce((t, v, k) => t + v * b[k], 0) / (Math.hypot(...a) * Math.hypot(...b)))) * 180) / Math.PI;
+    await api(p, 'jumpTo', [Date.parse('2026-10-29T18:00:00Z'), true]);
+    await p.waitForTimeout(500);
+    const r0 = rel(await api(p, 'state'));
+    for (let k = 0; k < 16; k++) {
+      await p.keyboard.down('ArrowRight');
+      await p.waitForTimeout(100);
+    }
+    await p.keyboard.up('ArrowRight');
+    await p.waitForTimeout(1500);
+    s = await api(p, 'state');
+    const turned = angle(r0, rel(s));
+    check(
+      'flèches en vue d’un satellite : la caméra pivote autour d’Io, qui reste sélectionnée',
+      turned > 10 && s.satellite === 'io' && s.cameraMode === 'satellite' && s.nav.layer === 'scene',
+      `rotation ${turned.toFixed(1)}°, ${s.cameraMode}`,
+    );
     await p.keyboard.press('Escape');
     await p.waitForTimeout(3500);
     s = await api(p, 'state');

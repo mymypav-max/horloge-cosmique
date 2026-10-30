@@ -399,7 +399,7 @@ export class App {
     // Commandes continues de la caméra.
     let h = 0;
     let v = 0;
-    if (arrowsControlCamera(this.nav) && this.rig.mode === 'detail') {
+    if (arrowsControlCamera(this.nav) && this.rig.acceptsRotationInput) {
       const held = (d: Direction) => this.held[d] > 0 && now - this.held[d] < HELD_KEY_TIMEOUT_MS;
       h = (held('right') ? 1 : 0) - (held('left') ? 1 : 0);
       v = (held('up') ? 1 : 0) - (held('down') ? 1 : 0);
