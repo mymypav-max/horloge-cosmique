@@ -19,8 +19,10 @@
  *  7. (V2) lunes : liste par planète, aucune pour Mercure et Vénus, vue
  *     d'une lune avec sa planète visible derrière, retour à la planète ;
  *  8. (V2) ISS : présente dans la vue de la Terre seulement, sélection,
- *     Terre visible derrière, suivi du temps (pause, accélération),
- *     disparition hors de la période de validité ;
+ *     Terre visible derrière, suivi du temps (pause, accélération), règle
+ *     de validité (prévision NASA, extrapolation 7 jours, puis ISS masquée
+ *     avec indication de mise à jour), y compris quand le temps accéléré
+ *     franchit la limite ;
  *  9. (V2) taille apparente du Soleil dans les vues rapprochées (Terre,
  *     Neptune), vue générale inchangée, vue « Soleil ».
  * Les captures sont enregistrées dans test-results/.
@@ -422,7 +424,7 @@ try {
     check(
       'fiche de l’ISS : altitude, vitesse, période, inclinaison, époque, validité',
       ['Altitude calculée', 'Vitesse', 'Période orbitale', 'Inclinaison', 'Éléments', 'Validité'].every((l) => s.info.some((r) => r.startsWith(l))) &&
-        s.info.some((r) => r.includes('prévision NASA')),
+        s.info.some((r) => r.includes('Prévision NASA du')),
       s.info.join(' | '),
     );
     const earthCover = await api(page, 'sphereCoverage', [...s.planetPositions.earth, 0.45]);
@@ -443,20 +445,95 @@ try {
     const d = (await api(page, 'state')).satelliteLayouts.iss.position;
     const moving = Math.hypot(...c.map((v, k) => v - d[k]));
     check('ISS : immobile en pause, en mouvement quand le temps avance', paused === 0 && moving > 0, `pause ${paused}, en marche ${moving.toExponential(2)}`);
-    // Hors de la période de validité : l'ISS disparaît et la vue revient à la Terre.
-    await api(page, 'jumpTo', [Date.UTC(1990, 0, 1), true]);
-    await page.waitForTimeout(3500);
+    // Règle de validité : prévision NASA (nominal) → extrapolation (7 jours) → ISS masquée, données à actualiser.
+    const STOP = Date.parse('2026-11-12T12:00:00Z');
+    const DAY = 86_400_000;
+    const panel = () =>
+      page.evaluate(() => ({
+        items: Array.from(document.querySelectorAll('.satellites .panel__item')).map((e) => e.textContent),
+        note: document.querySelector('.satellites .panel__note')?.hidden ? '' : document.querySelector('.satellites .panel__note')?.textContent ?? '',
+        toast: document.querySelector('.toast.is-visible')?.textContent ?? '',
+      }));
+    check('fiche (instant nominal) : « Prévision NASA du 28 octobre 2026 »', s.info.some((r) => r === 'ValiditéPrévision NASA du 28 octobre 2026'), s.info.join(' | '));
+    await api(page, 'jumpTo', [STOP, true]);
+    await page.waitForTimeout(1500);
     s = await api(page, 'state');
-    const list1990 = await api(page, 'satellitesFor', ['earth']);
     check(
-      'en 1990, pas d’ISS : retour automatique à la Terre',
-      s.issShown === false && s.satellite === null && !list1990.includes('iss') && s.cameraMode === 'detail',
-      `${s.cameraMode}, liste ${list1990.join(',')}`,
+      'dernier instant nominal (12 nov. 12:00 UTC) : ISS affichée, prévision NASA',
+      s.issShown && s.satellite === 'iss' && s.info.some((r) => r.includes('Prévision NASA du 28 octobre 2026')),
+      s.info.join(' | '),
     );
-    await api(page, 'jumpTo', [Date.UTC(2026, 11, 20), true]);
-    await page.waitForTimeout(500);
-    const listLate = await api(page, 'satellitesFor', ['earth']);
-    check('plus de 30 jours après les données : pas d’ISS', !listLate.includes('iss'), listLate.join(','));
+    await api(page, 'jumpTo', [STOP + 60_000, true]);
+    await page.waitForTimeout(1500);
+    s = await api(page, 'state');
+    let pnl = await panel();
+    check(
+      'première minute après expiration : statut « Extrapolation », ISS toujours affichée',
+      s.issShown && s.satellite === 'iss' && s.info.some((r) => r === 'ValiditéExtrapolation') && s.info.some((r) => r.startsWith('Prévision expirée depuis')),
+      s.info.join(' | '),
+    );
+    check('liste des satellites : ISS marquée « Extrapolation »', pnl.items.some((t) => t.includes('ISS') && t.includes('Extrapolation')), pnl.items.join(','));
+    await page.screenshot({ path: resolve(outDir, 'v2-iss-extrapolation.png') });
+    await api(page, 'jumpTo', [STOP + 7 * DAY - 60_000, true]);
+    await page.waitForTimeout(1500);
+    s = await api(page, 'state');
+    check('dernier jour d’extrapolation (19 nov. 11:59 UTC) : ISS affichée', s.issShown && s.satellite === 'iss', `${s.cameraMode}`);
+    // En pause, l'ISS reste affichée ; en accélérant (×3 600), le temps franchit la limite et l'ISS disparaît d'elle-même.
+    await page.waitForTimeout(1500);
+    s = await api(page, 'state');
+    check('en pause juste avant la limite : ISS toujours affichée', s.issShown && s.satellite === 'iss');
+    await api(page, 'jumpTo', [STOP + 7 * DAY - 60_000, false]);
+    await api(page, 'setRate', [3600]);
+    await page.waitForTimeout(1500); // 1,5 s à ×3 600 : 1 h 30 simulées, la limite est franchie après 1 min ; le message dure 2,8 s.
+    s = await api(page, 'state');
+    pnl = await panel();
+    check(
+      'accélération au-delà du 7e jour : ISS masquée, vue de l’ISS fermée, message',
+      s.issShown === false && s.satellite === null && s.time.simMs > STOP + 7 * DAY && pnl.toast.includes('à actualiser'),
+      `${s.cameraMode}, ${new Date(s.time.simMs).toISOString()}, message « ${pnl.toast} »`,
+    );
+    await page.waitForTimeout(3500); // fin de la transition de la caméra vers la Terre
+    s = await api(page, 'state');
+    check('… puis retour à la vue de la Terre', s.cameraMode === 'detail' && s.nav.detail === 'earth' && s.issShown === false, s.cameraMode);
+    await api(page, 'setRate', [1]);
+    await api(page, 'jumpTo', [STOP + 7 * DAY + 60_000, true]);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight'); // Satellites (après Régions)
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(800);
+    pnl = await panel();
+    const listAfter = await api(page, 'satellitesFor', ['earth']);
+    check(
+      'première minute après la limite (19 nov. 12:01) : ISS absente de la liste, indication « données à actualiser »',
+      !listAfter.includes('iss') && pnl.items.join(',') === 'Lune' && pnl.note.includes('doivent être actualisées'),
+      `liste ${pnl.items.join(',')} — « ${pnl.note} »`,
+    );
+    await page.screenshot({ path: resolve(outDir, 'v2-iss-masquee.png') });
+    // Changement de date pendant que la liste est ouverte : elle se met à jour aussitôt.
+    await api(page, 'jumpTo', [STOP - DAY, true]);
+    await page.waitForTimeout(800);
+    pnl = await panel();
+    check('retour dans la période nominale : ISS de nouveau proposée', pnl.items.some((t) => t.startsWith('ISS')) && pnl.note === '', pnl.items.join(','));
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    for (const [label, ms, expected] of [
+      ['avant le lancement (1990)', Date.UTC(1990, 0, 1), 'pas encore en orbite'],
+      ['après la dernière période autorisée (12 déc. 2026, ancien seuil de 30 jours)', Date.UTC(2026, 11, 12, 12), 'doivent être actualisées'],
+      ['2030', Date.UTC(2030, 0, 1), 'doivent être actualisées'],
+    ]) {
+      await api(page, 'jumpTo', [ms, true]);
+      await page.waitForTimeout(600);
+      s = await api(page, 'state');
+      const l = await api(page, 'satellitesFor', ['earth']);
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(500);
+      pnl = await panel();
+      check(`${label} : pas d’ISS, explication affichée`, !l.includes('iss') && s.issShown === false && pnl.note.includes(expected), `« ${pnl.note} »`);
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+    }
     check('aucune erreur (ISS)', errors.length === 0, errors.join(' | '));
     await page.close();
   }

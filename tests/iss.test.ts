@@ -7,8 +7,10 @@ import {
   ISS_DATA,
   ISS_DATA_START_MS,
   ISS_DATA_STOP_MS,
+  ISS_EXTRAPOLATION_DAYS,
   ISS_FIRST_MODULE_LAUNCH_MS,
   ISS_INCLINATION_DEG,
+  ISS_MAX_DATA_USE_DAYS,
   ISS_PERIOD_MINUTES,
   issOrbitPath,
   issState,
@@ -76,21 +78,62 @@ describe('données de l’ISS', () => {
 });
 
 describe('validité des données de l’ISS', () => {
-  it('distingue les états prévision, approximatif, indicatif et indisponible', () => {
+  const MIN = 60_000;
+  const STOP = ISS_DATA_STOP_MS;
+
+  it('est nominale sur toute la période de la prévision NASA, dernier instant compris', () => {
+    expect(issValidity(ISS_DATA_START_MS)).toEqual({ status: 'nominal', daysOutside: 0 });
     expect(issValidity(ISS_DATA_START_MS + DAY).status).toBe('nominal');
-    expect(issValidity(ISS_DATA_STOP_MS + 3 * DAY).status).toBe('approximate');
-    expect(issValidity(ISS_DATA_STOP_MS + 20 * DAY).status).toBe('indicative');
-    expect(issValidity(ISS_DATA_STOP_MS + 31 * DAY)).toMatchObject({ status: 'unavailable', reason: 'tooOld' });
-    expect(issValidity(ISS_DATA_START_MS - 10 * DAY).status).toBe('indicative');
-    expect(issValidity(ISS_DATA_START_MS - 40 * DAY)).toMatchObject({ status: 'unavailable', reason: 'tooEarly' });
-    expect(issValidity(ISS_FIRST_MODULE_LAUNCH_MS - 1)).toMatchObject({ status: 'unavailable', reason: 'beforeLaunch' });
-    expect(issValidity(Date.UTC(1969, 6, 20)).reason).toBe('beforeLaunch');
+    expect(issValidity(STOP)).toEqual({ status: 'nominal', daysOutside: 0 });
   });
 
-  it('ne fournit aucune position hors des limites', () => {
-    expect(issState(ISS_DATA_STOP_MS + 60 * DAY)).toBeNull();
+  it('passe en extrapolation dès la première minute après l’expiration de la prévision', () => {
+    expect(issValidity(STOP + 1).status).toBe('extrapolation');
+    const v = issValidity(STOP + MIN);
+    expect(v).toMatchObject({ status: 'extrapolation', beforeData: false });
+    expect(v.daysOutside * 1440).toBeCloseTo(1, 9);
+    expect(issState(STOP + MIN)).not.toBeNull();
+  });
+
+  it('reste en extrapolation jusqu’au dernier instant du 7e jour', () => {
+    expect(issValidity(STOP + 6.5 * DAY).status).toBe('extrapolation');
+    expect(issValidity(STOP + ISS_EXTRAPOLATION_DAYS * DAY - MIN).status).toBe('extrapolation');
+    expect(issValidity(STOP + ISS_EXTRAPOLATION_DAYS * DAY).status).toBe('extrapolation');
+    expect(issState(STOP + ISS_EXTRAPOLATION_DAYS * DAY)).not.toBeNull();
+  });
+
+  it('masque l’ISS dès l’instant suivant (données expirées, à actualiser)', () => {
+    const first = STOP + ISS_EXTRAPOLATION_DAYS * DAY + 1;
+    expect(issValidity(first)).toMatchObject({ status: 'unavailable', reason: 'expired' });
+    expect(issState(first)).toBeNull();
+    expect(issState(STOP + ISS_EXTRAPOLATION_DAYS * DAY + MIN)).toBeNull();
+  });
+
+  it('ne propose aucune position au-delà de la dernière période autorisée (ancien seuil de 30 jours supprimé)', () => {
+    for (const t of [STOP + 8 * DAY, STOP + 14 * DAY, STOP + 20 * DAY, STOP + 30 * DAY, Date.UTC(2030, 0, 1)]) {
+      expect(issValidity(t)).toMatchObject({ status: 'unavailable', reason: 'expired' });
+      expect(issState(t)).toBeNull();
+    }
+  });
+
+  it('respecte le plafond de 14 jours d’utilisation des données', () => {
+    expect(ISS_EXTRAPOLATION_DAYS).toBe(7);
+    expect(ISS_MAX_DATA_USE_DAYS).toBe(14);
+    expect(ISS_EXTRAPOLATION_DAYS).toBeLessThanOrEqual(ISS_MAX_DATA_USE_DAYS);
+  });
+
+  it('traite de même les instants antérieurs à la prévision (extrapolation 7 jours, puis aucune donnée)', () => {
+    expect(issValidity(ISS_DATA_START_MS - MIN)).toMatchObject({ status: 'extrapolation', beforeData: true });
+    expect(issValidity(ISS_DATA_START_MS - ISS_EXTRAPOLATION_DAYS * DAY).status).toBe('extrapolation');
+    expect(issValidity(ISS_DATA_START_MS - ISS_EXTRAPOLATION_DAYS * DAY - 1)).toMatchObject({ status: 'unavailable', reason: 'beforeData' });
+    expect(issState(Date.UTC(2020, 0, 1))).toBeNull();
+  });
+
+  it('n’existe pas avant le lancement de son premier module (20 novembre 1998)', () => {
+    expect(ISS_FIRST_MODULE_LAUNCH_MS).toBe(Date.UTC(1998, 10, 20, 6, 40));
+    expect(issValidity(ISS_FIRST_MODULE_LAUNCH_MS - 1)).toMatchObject({ status: 'unavailable', reason: 'beforeLaunch' });
+    expect(issValidity(Date.UTC(1969, 6, 20)).reason).toBe('beforeLaunch');
     expect(issState(Date.UTC(1990, 0, 1))).toBeNull();
-    expect(issState(ISS_DATA_STOP_MS + 10 * DAY)).not.toBeNull();
   });
 });
 

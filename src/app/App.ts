@@ -32,7 +32,7 @@ import { describeRate, formatNumber, formatRate } from '../ui/format';
 import { type SatelliteLabel, Overlay } from '../ui/Overlay';
 import { geoToEarthFixed } from '../astro/earth';
 import { mulVec } from '../astro/math';
-import { issInfo, issValidityText, moonInfo, moonSubtitle, planetInfo } from './info';
+import { issInfo, issUnavailableText, issValidityText, moonInfo, moonSubtitle, planetInfo } from './info';
 import { SETTINGS_ENTRIES, type Settings, cycleSetting, saveSettings } from './settings';
 import type { StartupOptions } from './startup';
 
@@ -79,6 +79,8 @@ export class App {
   /** Satellite à ouvrir au démarrage (paramètre d'adresse), une fois la vue de la planète prête. */
   private pendingSatellite: SatelliteId | null = null;
   private sunRadius = 0;
+  /** Dernier état de validité de l'ISS pris en compte par la liste des satellites. */
+  private issValidityKey = '';
 
   constructor(
     readonly view: SceneView,
@@ -349,16 +351,19 @@ export class App {
       detail: id === 'iss' ? this.issListDetail() : undefined,
     }));
     const title = planet === 'earth' ? 'Satellites de la Terre' : planet ? `Lunes ${/^[AEIOUÉ]/.test(PLANETS[planet].name) ? 'd’' : 'de '}${PLANETS[planet].name}` : '';
+    // ISS masquée (avant son lancement, hors des données embarquées) : la liste explique pourquoi.
+    const iss = planet === 'earth' ? issValidity(this.time.now()) : null;
     this.overlay.renderNavigation(this.nav, this.time.isPaused(), this.settings, {
       title,
       entries,
       parentName: planet ? PLANETS[planet].name : '',
+      note: iss && iss.status === 'unavailable' ? issUnavailableText(iss).note : '',
     });
   }
 
   private issListDetail(): string | undefined {
     const v = issValidity(this.time.now());
-    return v.status === 'nominal' ? undefined : issValidityText(v);
+    return v.status === 'extrapolation' ? issValidityText(v) : undefined;
   }
 
   // ---------------------------------------------------------- Boucle
@@ -407,10 +412,17 @@ export class App {
     const fade = progress <= 0.15 ? 0 : progress >= 0.75 ? 1 : (progress - 0.15) / 0.6;
 
     // Satellites de la planète observée : positions recalculées à chaque image (mouvement fluide), avant la caméra qui les suit.
+    const iss = issValidity(time.simMs);
     this.checkIssAvailability(time.simMs);
+    // Le temps simulé franchit une limite de validité de l'ISS : la liste des satellites est mise à jour aussitôt.
+    const issKey = `${iss.status}:${iss.reason ?? ''}`;
+    if (issKey !== this.issValidityKey) {
+      this.issValidityKey = issKey;
+      this.refreshNavigationUi();
+    }
     const graph = this.view.graph;
     const subjectLayout = this.rig.subject && graph.layout ? graph.layout[this.rig.subject] : null;
-    const showIss = issValidity(time.simMs).status !== 'unavailable';
+    const showIss = iss.status !== 'unavailable';
     const subjectHelio = this.rig.subject ? this.astro.positions[this.rig.subject] : null;
     graph.satellites.update(time.simMs, subjectLayout, subjectHelio, fade, this.nav.satellite, showIss);
 
@@ -446,12 +458,14 @@ export class App {
     this.view.graph.setSunDisplaySize(radius, displayedSunGlow(p ? fade : 0, radius, cameraDistance));
   }
 
-  /** Si l'ISS observée n'a plus de données valables pour l'instant affiché, retour à la Terre. */
+  /** Si l'ISS observée est masquée à l'instant affiché (données expirées ou absentes), retour à la Terre. */
   private checkIssAvailability(simMs: number): void {
-    if (this.nav.satellite !== 'iss' || issValidity(simMs).status !== 'unavailable') return;
+    if (this.nav.satellite !== 'iss') return;
+    const v = issValidity(simMs);
+    if (v.status !== 'unavailable') return;
     this.nav = { ...this.nav, satellite: null, layer: this.nav.layer === 'satellites' ? 'bar' : this.nav.layer };
     this.dispatchEffect({ type: 'closeSatellite' });
-    this.overlay.showToast('ISS : aucune donnée valable pour cette date');
+    this.overlay.showToast(issUnavailableText(v).toast);
     this.refreshNavigationUi();
   }
 
@@ -497,8 +511,13 @@ export class App {
       }
       if (now - this.lastInfoUpdate > 1000 && visible) {
         const iss = satellite === 'iss' ? issState(time.simMs) : null;
-        const info = satellite === 'iss' ? (iss ? issInfo(iss) : null) : moonInfo(satellite, this.astro);
-        if (info) this.overlay.setInfo(info.lines, info.note);
+        if (satellite !== 'iss') {
+          const info = moonInfo(satellite, this.astro);
+          this.overlay.setInfo(info.lines, info.note, info.representation);
+        } else if (iss) {
+          const info = issInfo(iss);
+          this.overlay.setInfo(info.lines, info.note);
+        }
         this.lastInfoUpdate = now;
       }
     } else if (inDetail) {
@@ -687,6 +706,7 @@ export class App {
         cameraPosition: this.view.camera.position.toArray(),
         sunRadius: this.sunRadius,
         info: Array.from(document.querySelectorAll('.info .info__row')).map((row) => row.textContent),
+        representation: document.querySelector('.info .info__repr')?.textContent ?? '',
         title: document.querySelector('.title__name')?.textContent ?? '',
         issShown: this.view.graph.satellites.issShown,
       }),
@@ -717,6 +737,7 @@ export class App {
         this.time.jumpTo(ms, { paused });
         this.lastAstroSim = Number.NaN;
       },
+      setRate: (rate: number) => this.time.setRate(rate),
       dispatch: (a: Action) => this.dispatch(a),
       setClouds: (on: boolean) => this.view.graph.earth.setClouds(on),
       setCityLights: (strength: number) => {

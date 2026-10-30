@@ -358,14 +358,40 @@ l'**éphéméride prévisionnelle officielle de la NASA** :
 
 `scripts/iss/fit-iss-elements.mjs` convertit chaque vecteur d'état EME2000
 en TEME (précession-nutation IAU 2000B et équation des équinoxes,
-astronomy-engine), puis ajuste par moindres carrés les sept paramètres SGP4
-(moyen mouvement, e·cos ω, e·sin ω, inclinaison, nœud, ω + M, B*) avec la
-propagation SGP4 de satellite.js 7.1.0. Les éléments obtenus
-(`src/data/iss.json`, format OMM, époque 2026-10-28 12:00 UTC) **ne sont pas
-un TLE officiel** et sont présentés comme tels.
+astronomy-engine), puis ajuste par moindres carrés (Levenberg–Marquardt, un
+vecteur toutes les 12 minutes, fenêtres de 1 jour, 3 jours puis 15 jours) les
+sept paramètres SGP4 (moyen mouvement, e·cos ω, e·sin ω, inclinaison, nœud,
+ω + M, B*) avec la propagation SGP4 de satellite.js 7.1.0 ; ṅ/2 et n̈/6, que
+SGP4 n'utilise pas, valent 0.
 
-- Écart au fichier NASA sur toute la période : **0,80 km (moyenne
-  quadratique), 2,13 km au plus**.
+**Ce que sont ces éléments, sans ambiguïté :**
+
+- ce sont des éléments orbitaux **ajustés par le projet** à partir de
+  l'éphéméride prévisionnelle de la NASA ci-dessus (`src/data/iss.json`,
+  format OMM, époque 2026-10-28 12:00 UTC) ;
+- ils sont exploités avec le **modèle SGP4** ;
+- ils **ne constituent pas un TLE officiel** : un TLE est produit par l'US
+  Space Force à partir d'observations de suivi de la station réelle et
+  recalculé après chaque manœuvre, alors que ces éléments décrivent une
+  prévision modélisée, figée au moment de la compilation. L'application ne
+  les présente jamais comme un TLE ;
+- leur précision est évaluée **uniquement par comparaison avec la prévision
+  NASA source** ; l'écart à la position réelle de la station n'est pas
+  connu (le fichier NASA n'indique aucune précision) ;
+- leur **validité est limitée dans le temps** : la période de la prévision,
+  puis 7 jours d'extrapolation au plus (voir ci-dessous) ;
+- une **manœuvre orbitale non intégrée** à la prévision (rehaussement,
+  évitement de débris décidé après sa publication) peut rendre la position
+  incorrecte, de centaines de kilomètres ou davantage le long de l'orbite.
+  Ordre de grandeur (calcul, pas mesure) : une poussée de 1 m/s relève
+  l'orbite d'environ 1,8 km et décale ensuite la station d'environ 260 km
+  par jour. La prévision du 28 octobre 2026 ne contient elle-même aucune
+  manœuvre (demi-grand axe moyen en baisse régulière de 0,37 km en 15 jours,
+  aucune hausse d'une révolution à l'autre).
+
+- Écart à la prévision NASA sur toute la période : **0,80 km (moyenne
+  quadratique), 2,13 km au plus** (2,18 km au plus pour la chaîne complète de
+  l'application, nutation négligée comprise).
 - Vieillissement (éléments ajustés sur les 3 premiers jours seulement,
   comparés aux jours suivants) : 1,2 km au jour 3, 5,7 km au jour 5,
   11 km au jour 7, 26 km au jour 10, 59 km au jour 15.
@@ -381,18 +407,37 @@ moins de 3 km.
 
 ### Politique de validité
 
-| État | Condition | Affichage |
-|---|---|---|
-| Prévision NASA à jour | instant dans la période des données | position à quelques km près |
-| Approximative | jusqu'à 7 jours hors de la période | « approximative (données à N j) » ; écart de quelques dizaines de km possible |
-| Indicative | de 7 à 30 jours hors de la période | « indicative » ; position le long de l'orbite incertaine (manœuvres de rehaussement imprévisibles) |
-| Indisponible | au-delà de 30 jours, ou avant le 20 novembre 1998 (lancement de Zarya) | ISS absente de la vue et de la liste |
+Règle du projet (`src/astro/iss.ts`), avec les données embarquées :
 
-Ces seuils sont des choix du projet, appuyés sur le test de vieillissement. La
-fiche rappelle toujours qu'il s'agit d'une position **calculée**, non observée
-en temps réel. Avec les données embarquées, l'ISS cesse d'être affichée
-après le **12 décembre 2026** : il faut alors mettre à jour les données
-(`npm run data:iss`, sur un ordinateur connecté) puis recompiler l'APK.
+| État | Période (UTC) | Affichage |
+|---|---|---|
+| Nominal | du 28 octobre 2026, 12 h 00, au **12 novembre 2026, 12 h 00** (période de la prévision, dernier instant compris) | fiche « Validité : Prévision NASA du 28 octobre 2026 » ; note : écart ≤ 3 km **avec cette prévision**, et non avec la position réelle de la station |
+| Extrapolation | du 12 novembre, 12 h 00 (exclu), au **19 novembre 2026, 12 h 00** (7 jours) | liste et fiche « Extrapolation », ligne « Prévision expirée depuis … » ; note : aucune précision garantie, une manœuvre orbitale non intégrée peut décaler la station de centaines de kilomètres ou davantage |
+| Masquée | à partir du 19 novembre 2026, 12 h 00 (exclu) | ISS retirée de la liste et de la scène ; la liste « Satellites » de la Terre indique que la prévision a expiré et que les données doivent être actualisées ; si l'ISS était affichée, retour à la Terre avec un message |
+| Masquée | plus de 7 jours avant le début de la prévision | « aucune donnée orbitale embarquée pour cette date » |
+| Masquée | avant le 20 novembre 1998, 06 h 40 (lancement de Zarya) | « pas encore en orbite à cette date » |
+
+L'ancien seuil de 30 jours (position « indicative ») est supprimé. Le plafond
+d'utilisation des données retenu par le projet est de 14 jours après la fin
+de la prévision ; la règle appliquée (7 jours) reste en deçà, ce que vérifient
+les tests. Ces durées sont des choix du projet, non des mesures : en
+l'absence de manœuvre, l'extrapolation SGP4 resterait proche de la
+trajectoire prévue (éléments ajustés sur 7,5 jours : moins de 2,5 km sur les
+7,5 jours suivants ; sur 3 jours : 26 km au bout de 7 jours), mais une
+manœuvre non prévue ne peut pas être exclue. Le temps affiché est celui de
+l'application : en temps réel, l'horloge du Fire TV ; la règle s'applique
+aussi en pause, en accélération et après un changement de date (la liste des
+satellites est mise à jour aussitôt).
+
+Pour actualiser : `npm run data:iss` sur un ordinateur connecté (télécharge
+la dernière prévision NASA, refait l'ajustement SGP4 et met à jour les
+métadonnées : date de création, période, récupération, empreinte), puis
+`npm test`, `npm run build` et recompilation de l'APK. L'application continue
+de fonctionner hors ligne avec les dernières données embarquées. Vérifié le
+30 octobre 2026 : le script récupère et ajuste le fichier en ligne ; la NASA
+n'ayant pas encore publié de prévision plus récente (même empreinte
+SHA-256, même date de création), les données embarquées n'ont pas été
+changées.
 
 ## 10. Taille apparente du Soleil (version 2)
 

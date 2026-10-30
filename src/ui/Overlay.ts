@@ -56,6 +56,15 @@ export interface SatelliteEntry {
   detail?: string;
 }
 
+/** Contenu du panneau « Satellites ». */
+export interface SatellitePanel {
+  title: string;
+  entries: SatelliteEntry[];
+  parentName: string;
+  /** Explication affichée sous la liste (vide : aucune). */
+  note: string;
+}
+
 /** Libellé d'un satellite à l'écran (pixels CSS). */
 export interface SatelliteLabel {
   id: string;
@@ -85,6 +94,8 @@ export class Overlay {
   private readonly satellites: HTMLElement;
   private readonly satellitesTitle: HTMLElement;
   private readonly satellitesList: HTMLElement;
+  /** Explication sous la liste (ex. ISS masquée faute de données valables). */
+  private readonly satellitesNote: HTMLElement;
   private satellitesSignature = '';
   private readonly satLabelsLayer: HTMLElement;
   private readonly satLabels = new Map<string, HTMLElement>();
@@ -129,6 +140,8 @@ export class Overlay {
     this.satellites = el('div', 'panel satellites', this.root);
     this.satellitesTitle = el('h2', 'panel__title', this.satellites);
     this.satellitesList = el('ul', 'panel__list', this.satellites);
+    this.satellitesNote = el('p', 'panel__note', this.satellites);
+    this.satellitesNote.hidden = true;
     this.settings = el('div', 'panel settings', this.root);
     el('h2', 'panel__title', this.settings).textContent = 'Réglages';
     const settingsList = el('ul', 'panel__list', this.settings);
@@ -185,7 +198,8 @@ export class Overlay {
 
   // ------------------------------------------------------ Panneau d'infos
 
-  setInfo(lines: InfoLine[] | null, note = ''): void {
+  /** Fiche d'information ; « representation » : mentions sur la qualité de la représentation visuelle (lunes). */
+  setInfo(lines: InfoLine[] | null, note = '', representation: readonly string[] = []): void {
     if (!lines) {
       this.info.classList.remove('is-visible');
       return;
@@ -193,7 +207,10 @@ export class Overlay {
     const html = lines
       .map((l) => `<div class="info__row"><span class="info__label">${l.label}</span><span class="info__value">${l.value}</span></div>`)
       .join('');
-    const content = html + (note ? `<p class="info__note">${note}</p>` : '');
+    const repr = representation.length
+      ? `<p class="info__repr"><span class="info__repr-label">Représentation</span>${representation.join(' · ')}</p>`
+      : '';
+    const content = html + repr + (note ? `<p class="info__note">${note}</p>` : '');
     if (this.info.innerHTML !== content) this.info.innerHTML = content;
     this.info.classList.add('is-visible');
   }
@@ -204,7 +221,7 @@ export class Overlay {
     nav: NavState,
     paused: boolean,
     settings: Settings,
-    satellites: { title: string; entries: SatelliteEntry[]; parentName: string } = { title: '', entries: [], parentName: '' },
+    satellites: SatellitePanel = { title: '', entries: [], parentName: '', note: '' },
   ): void {
     const items = barItems(nav);
     const signature = `${items.join(',')}|${paused}|${satellites.parentName}`;
@@ -232,7 +249,7 @@ export class Overlay {
       node.classList.toggle('is-focused', k === nav.regionIndex);
     });
 
-    const satSignature = `${satellites.title}|${satellites.entries.map((e) => `${e.id}:${e.name}:${e.detail ?? ''}`).join(',')}`;
+    const satSignature = `${satellites.title}|${satellites.entries.map((e) => `${e.id}:${e.name}:${e.detail ?? ''}`).join(',')}|${satellites.note}`;
     if (satSignature !== this.satellitesSignature) {
       this.satellitesSignature = satSignature;
       setText(this.satellitesTitle, satellites.title);
@@ -243,6 +260,8 @@ export class Overlay {
         el('span', 'setting__label', li).textContent = entry.name;
         if (entry.detail) el('span', 'satellite__detail', li).textContent = entry.detail;
       }
+      setText(this.satellitesNote, satellites.note);
+      this.satellitesNote.hidden = !satellites.note;
     }
     this.satellites.classList.toggle('is-visible', nav.layer === 'satellites');
     const satIndex = Math.min(nav.satelliteIndex, Math.max(0, satellites.entries.length - 1));

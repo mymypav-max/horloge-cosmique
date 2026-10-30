@@ -16,7 +16,9 @@ obtenus, et ce qui **n'a pas pu l'être**.
   zipalign, apksigner ; `android.jar` de l'API 35.
 
 Date des mesures : 29 octobre 2026 (version 1, puis version 2 : lunes, ISS et
-taille apparente du Soleil, mesurée le même jour).
+taille apparente du Soleil, mesurée le même jour) ; consolidation de la
+version 2 (Déimos, validité de l'ISS, fiches des lunes, orientations des
+cartes) : 30 octobre 2026.
 
 ## Lancer les tests
 
@@ -27,9 +29,10 @@ npm run build        # compilation de production
 npm run test:e2e     # bout en bout (après « npx playwright install chromium »)
 ```
 
-## 1. Tests unitaires — 202 / 202 réussis
+## 1. Tests unitaires — 213 / 213 réussis
 
-`npm test` : 17 fichiers, 202 tests (143 en version 1), durée ≈ 1,6 s.
+`npm test` : 17 fichiers, 213 tests (143 en version 1, 202 avant la
+consolidation de la version 2), durée ≈ 1,9 s.
 
 | Fichier | Tests | Contenu |
 |---|---|---|
@@ -46,10 +49,10 @@ npm run test:e2e     # bout en bout (après « npx playwright install chromium �
 | `format.test.ts` | 8 | heure 24 h, date longue (« 1er »), années av. J.-C., nombres à la française, vitesses, décalages, coordonnées, périodes |
 | `app.test.ts` | 9 | paramètres d'adresse, réglages, détection de qualité (Fire TV, WebGL 1), taille de texture maximale, rendu 1920 × 1080 sur WebView 960 × 540 px CSS, résolution dynamique, saisons (à l'heure près autour de l'équinoxe) |
 | `moons.test.ts` (V2) | 19 | catalogue (22 lunes, aucune pour Mercure et Vénus), positions comparées aux vecteurs JPL Horizons (16 instants par lune, écart ≤ écart annoncé), périodes de l'en-tête Horizons (±0,5 %), 3e loi de Kepler (±1 %), **satellites galiléens contre la théorie E5 de Lieske** (< 0,3°), **Lune contre astronomy-engine** (< 0,4° et 0,4 % sur 1900–2100), distance Terre-Lune, Triton seule lune rétrograde, lunes d'Uranus directes, inclinaison de la Lune (≈ 5,1°), déterminisme, continuité (aucun saut, y compris aux bornes 2010 et 2030), sens du mouvement, orbite passant par la lune, extrapolation de −2999 à 2999 sans erreur numérique |
-| `iss.test.ts` (V2) | 10 | **cas de vérification officiels de SGP4 (Vallado 2006)** à 1 cm près, provenance des données, altitude/vitesse/période/inclinaison réalistes, écart à l'éphéméride NASA < 3 km, états de validité, aucune position hors limites (1990, +60 jours), déterminisme (pause), cohérence avec la vitesse (accélération), orbite passant par la station |
+| `iss.test.ts` (V2) | 16 | **cas de vérification officiels de SGP4 (Vallado 2006)** à 1 cm près, provenance des données, altitude/vitesse/période/inclinaison réalistes, écart à l'éphéméride NASA < 3 km ; **règle de validité** (consolidation) : nominale jusqu'au dernier instant de la prévision compris, extrapolation dès la première minute après, jusqu'au dernier instant du 7e jour, ISS masquée à l'instant suivant (données expirées), aucune position au-delà (y compris 12 décembre 2026, ancien seuil de 30 jours, et 2030), plafond de 14 jours respecté, même règle avant la prévision, aucune ISS avant le 20 novembre 1998 ; déterminisme (pause), cohérence avec la vitesse (accélération), orbite passant par la station |
 | `sun.test.ts` (V2) | 7 | formule θ = 2·arcsin(D/2r), 0,524° à 0,542° vu de la Terre, **Mercure > Vénus > Terre > … > Neptune**, déterminisme, taille affichée = taille apparente réelle vue de la caméra, vue générale inchangée, transition sans saut, halo minimal |
 | `shadow.test.ts` (V2) | 4 | géométrie ombre/pénombre, éclipse totale de Lune du 14 mars 2025, Io dans l'ombre de Jupiter ≈ 5 % du temps, ISS dans l'ombre de la Terre (≤ 42 % de l'orbite) |
-| `satellites.test.ts` (V2) | 19 | représentation des satellites (échelle près de la planète puis compression, **direction exacte à 10⁻¹² rad : séparation données astronomiques / affichage**, lunes hors de la planète et des anneaux, ordre des tailles, ISS à l'échelle de la Terre, face synchrone tournée vers la planète), navigation (Mercure et Vénus sans satellites, liste, ouverture, Retour vers la planète puis vue générale, bouton « planète », vue « Soleil », ISS selon les données), caméra (transition qui contourne la planète, caméra repoussée hors de la planète, Soleil à 22° à gauche), fiches (lunes, ISS, ligne « Soleil vu d'ici »), mise en forme |
+| `satellites.test.ts` (V2) | 24 | représentation des satellites (échelle près de la planète puis compression, **direction exacte à 10⁻¹² rad : séparation données astronomiques / affichage**, lunes hors de la planète et des anneaux, ordre des tailles, ISS à l'échelle de la Terre, face synchrone tournée vers la planète), navigation (Mercure et Vénus sans satellites, liste, ouverture, Retour vers la planète puis vue générale, bouton « planète », vue « Soleil », ISS selon les données), caméra (transition qui contourne la planète, caméra repoussée hors de la planète, Soleil à 22° à gauche), fiches (lunes, ISS, ligne « Soleil vu d'ici »), mise en forme ; consolidation : **orientation des cartes sur le maillage réel** (longitude 0 vers la planète, nord IAU en haut, longitude 90° E dans le sens direct, y compris pour les rotations rétrogrades), **mentions de représentation** des 22 lunes (seules les réserves pertinentes), fiche de l'ISS « Prévision NASA du 28 octobre 2026 » avec écart mesuré par rapport à la prévision, « Extrapolation » sans précision garantie, explications quand l'ISS est masquée |
 
 Correspondance avec le cahier des charges :
 
@@ -68,6 +71,8 @@ Correspondance avec le cahier des charges :
 | (V2) Taille apparente du Soleil | `sun`, bout en bout |
 | (V2) Séparation position astronomique / position affichée | `satellites`, `representation` |
 | (V2) Non-régression | les 143 tests de la version 1 (un seul changé : Soleil visible en vue rapprochée) et les 22 contrôles de bout en bout de la version 1 |
+| (Consolidation) Validité de l'ISS : dernier instant nominal, première minute après expiration, dernier jour d'extrapolation, disparition, avant le lancement, après la dernière période ; pause, accélération, changement de date | `iss`, `satellites`, bout en bout |
+| (Consolidation) Transparence des représentations des lunes, orientation des cartes | `satellites`, bout en bout (captures), vérification sur la nomenclature UAI (docs/RESSOURCES.md) |
 
 ## 2. Précision mesurée du modèle
 
@@ -96,40 +101,56 @@ d'astronomy-engine (même instant TT), sur 2 000 instants :
 - Temps sidéral moyen vs apparent : écart maximal **1,16 s** de temps
   (équation des équinoxes, volontairement négligée).
 
-## 3. Vérification de bout en bout — 50 / 50 réussis
+## 3. Vérification de bout en bout — 61 / 61 réussis
 
-Version 2 (22 contrôles de la version 1, inchangés et réussis, plus 28 ; extrait de la sortie, libellés et valeurs séparés par une espace pour la lisibilité) :
+Consolidation de la version 2 (30 octobre 2026) : 22 contrôles de la version 1
+et 39 de la version 2, tous réussis. Les 2 anciens contrôles de validité de
+l'ISS (1990, « plus de 30 jours ») ont été remplacés par 13 contrôles de la
+nouvelle règle ; l'attente de la fiche de l'ISS suit le nouveau libellé
+(« Prévision NASA du 28 octobre 2026 » au lieu de « prévision NASA à jour »).
+Extrait de la sortie (`npm run test:e2e`, Chromium, WebGL SwiftShader) :
 
 ```
 ✔ Mercure : aucune entrée « Satellites » — zoomIn,zoomOut,recenter,sun,pause,slower,faster,now,overview
-✔ Vénus : aucune entrée « Satellites »
+✔ Vénus : aucune entrée « Satellites » — zoomIn,zoomOut,recenter,sun,pause,slower,faster,now,overview
 ✔ Jupiter : 4 lunes placées autour de la planète — io,europa,ganymede,callisto
 ✔ liste des lunes de Jupiter — Io,Europe,Ganymède,Callisto
 ✔ OK : vue d’Io — satellite Io
-✔ fiche d’Io en français (diamètre, distance, période, inclinaison) — Diamètre 3 643 km | Distance à Jupiter 423 500 km | Période orbitale 1 j 18 h 28 min | Inclinaison / équateur 0,04° | Sens du mouvement direct | …
+✔ fiche d’Io en français (diamètre, distance, période, inclinaison) — Diamètre3 643 km | Distance à Jupiter423 500 km | Période orbitale1 j 18 h 28 min | Inclinaison / équateur0,04° | Sens du mouvementdirect | Excentricité0,0041 | Découverte1610 (Galilée)
 ✔ Jupiter visible derrière Io, caméra hors de la planète — Jupiter couvre 23.6 % de l’image
 ✔ Io cadrée au centre de l’image — Io couvre 8.9 % de l’image
 ✔ Retour : retour à Jupiter — detail
 ✔ Retour : vue générale, sans lune affichée
 ✔ aucune erreur (lunes)
-✔ Saturne : 7 lunes, vue de Titan par l’adresse
+✔ Saturne : 7 lunes, vue de Titan par l’adresse — mimas,enceladus,tethys,dione,rhea,titan,iapetus
 ✔ vue de la Lune : Terre visible derrière — Terre 7.7 % de l’image
 ✔ aucune erreur (Titan, Lune)
 ✔ ISS affichée dans la vue de la Terre
 ✔ ISS proposée pour la Terre seulement — moon,iss
 ✔ sélection de l’ISS — iss satellite
-✔ fiche de l’ISS : altitude, vitesse, période, inclinaison, époque, validité — … Altitude calculée 424 km | Vitesse 7,66 km/s | Période orbitale 93,0 min | Inclinaison 51,6° | Éléments (époque) 28 octobre 2026, 12 h 00 UTC | Validité prévision NASA à jour
+✔ fiche de l’ISS : altitude, vitesse, période, inclinaison, époque, validité — Naturestation habitée (satellite artificiel) | Altitude calculée424 km | Vitesse7,66 km/s | Période orbitale93,0 min | Inclinaison51,6° | Éléments (époque)28 octobre 2026, 12 h 00 UTC | ValiditéPrévision NASA du 28 octobre 2026
 ✔ Terre visible derrière l’ISS — 30.4 % de l’image
-✔ ISS : immobile en pause, en mouvement quand le temps avance — pause 0, en marche 2.94e-2
-✔ en 1990, pas d’ISS : retour automatique à la Terre — detail, liste moon
-✔ plus de 30 jours après les données : pas d’ISS — moon
+✔ ISS : immobile en pause, en mouvement quand le temps avance — pause 0, en marche 3.01e-2
+✔ fiche (instant nominal) : « Prévision NASA du 28 octobre 2026 » — Naturestation habitée (satellite artificiel) | Altitude calculée424 km | Vitesse7,66 km/s | Période orbitale93,0 min | Inclinaison51,6° | Éléments (époque)28 octobre 2026, 12 h 00 UTC | ValiditéPrévision NASA du 28 octobre 2026
+✔ dernier instant nominal (12 nov. 12:00 UTC) : ISS affichée, prévision NASA — Naturestation habitée (satellite artificiel) | Altitude calculée414 km | Vitesse7,67 km/s | Période orbitale93,0 min | Inclinaison51,6° | Éléments (époque)28 octobre 2026, 12 h 00 UTC | ValiditéPrévision NASA du 28 octobre 2026
+✔ première minute après expiration : statut « Extrapolation », ISS toujours affichée — Naturestation habitée (satellite artificiel) | Altitude calculée414 km | Vitesse7,67 km/s | Période orbitale93,0 min | Inclinaison51,6° | Éléments (époque)28 octobre 2026, 12 h 00 UTC | ValiditéExtrapolation | Prévision expirée depuismoins d’une heure
+✔ liste des satellites : ISS marquée « Extrapolation » — Lune,ISS · station spatialeExtrapolation
+✔ dernier jour d’extrapolation (19 nov. 11:59 UTC) : ISS affichée — satellite
+✔ en pause juste avant la limite : ISS toujours affichée
+✔ accélération au-delà du 7e jour : ISS masquée, vue de l’ISS fermée, message — toPlanet, 2026-11-19T13:29:14.520Z, message « ISS masquée : données orbitales expirées, à actualiser »
+✔ … puis retour à la vue de la Terre — detail
+✔ première minute après la limite (19 nov. 12:01) : ISS absente de la liste, indication « données à actualiser » — liste Lune — « ISS masquée : la prévision NASA du 28 octobre 2026 a expiré le 12 novembre 2026, 12 h 00 UTC, il y a plus de 7 jours. Les données orbitales doivent être actualisées (mise à jour de l’application). »
+✔ retour dans la période nominale : ISS de nouveau proposée — Lune,ISS · station spatiale
+✔ avant le lancement (1990) : pas d’ISS, explication affichée — « ISS : pas encore en orbite à cette date (premier module lancé le 20 novembre 1998). »
+✔ après la dernière période autorisée (12 déc. 2026, ancien seuil de 30 jours) : pas d’ISS, explication affichée — « ISS masquée : la prévision NASA du 28 octobre 2026 a expiré le 12 novembre 2026, 12 h 00 UTC, il y a plus de 7 jours. Les données orbitales doivent être actualisées (mise à jour de l’application). »
+✔ 2030 : pas d’ISS, explication affichée — « ISS masquée : la prévision NASA du 28 octobre 2026 a expiré le 12 novembre 2026, 12 h 00 UTC, il y a plus de 7 jours. Les données orbitales doivent être actualisées (mise à jour de l’application). »
 ✔ aucune erreur (ISS)
 ✔ vue générale : taille du Soleil inchangée — 1.35
 ✔ vue de la Terre : Soleil de 0,53° à 0,55° — 0.5365°
 ✔ vue « Soleil » : Soleil visible à gauche de la Terre — x = 304 px, luminosité 187
 ✔ vue de Neptune : Soleil d’environ 0,018° — 0.01784°
 ✔ aucune erreur (Soleil)
-50/50 contrôles réussis.
+61/61 contrôles réussis.
 ```
 
 Version 1 (22 / 22, toujours réussis en version 2) :
@@ -204,12 +225,39 @@ première version regardait trop vers le sol, texture terrestre trop agrandie),
 ISS et lunes désormais assombries dans l'ombre de leur planète, vue « Soleil »
 (Soleil trop près du bord du globe).
 
+Consolidation (30 octobre 2026, 1280 × 720) :
+
+- **Déimos** : 4 instants espacés d'un quart d'orbite (face éclairée, demi-phase
+  de chaque côté, face nocturne), plus 4 vues « Soleil » (à contre-jour) ; la
+  zone non cartographiée apparaît en gris moyen uni, sans relief, au lieu de la
+  plage gris clair ; plus de raccord de tuiles visible ; fiche « Représentation
+  approximative · Carte partiellement reconstituée · Forme représentée par une
+  sphère ». Vues complémentaires de la carte plaquée sur un globe (hors de
+  l'application) : face tournée vers Mars, hémisphères avant et arrière, face
+  opposée, pôles ;
+- **lunes d'Uranus et Triton** : en 2026, l'hémisphère éclairé des lunes
+  d'Uranus est l'hémisphère nord, jamais photographié : il apparaît comme une
+  plage uniforme, ce que signalent désormais les fiches ; Triton éclairé
+  (1er novembre) : sud cartographié, nord uniforme ;
+- Protée, Néréide, Titan, Europe, Phobos : mentions conformes ;
+- **ISS** : fiche « Prévision NASA du 28 octobre 2026 » (29 octobre),
+  « Extrapolation » et « Prévision expirée depuis 45 h » (14 novembre), message
+  « ISS masquée : données orbitales expirées, à actualiser » puis liste
+  « Satellites de la Terre » réduite à la Lune avec l'explication (20 novembre) ;
+- 24 vues, toutes les cartes chargées (HTTP 200), aucune erreur JavaScript.
+
+Anomalie relevée pendant ces vérifications, **non corrigée** (hors du
+périmètre des cinq corrections) : en vue d'un satellite, les flèches ne font
+pas pivoter la caméra, alors que l'aide affiche « Pivoter » (la commande
+n'est transmise à la caméra qu'en vue d'une planète, `src/app/App.ts`). La
+caméra montre donc toujours l'hémisphère de la lune opposé à sa planète.
+
 ## 5. Compilation
 
 | Étape | Résultat |
 |---|---|
 | `npm run typecheck` | ✅ aucune erreur |
-| `npm run build` | ✅ V2 : `dist/` 6,6 Mo dont JavaScript 764 Ko (224 Ko compressé ; V1 : 684 Ko), textures 5,6 Mo (V1 : 2,8 Mo ; + 2,8 Mo de cartes des lunes) |
+| `npm run build` | ✅ V2 : `dist/` 6,6 Mo dont JavaScript 767 Ko (228 Ko compressé ; V1 : 684 Ko), textures 5,6 Mo (V1 : 2,8 Mo ; + 2,8 Mo de cartes des lunes) |
 | Syntaxe du JavaScript produit | ✅ analysable en ES2018 (Chromium ≥ 64) ; pas d'ES2019+ (V2 : `Array.prototype.flat`, `Object.fromEntries` et `Array.prototype.at` évités dans le code exécuté ; le module WebAssembly de satellite.js n'est pas inclus) |
 | Wrapper Gradle (`android/gradlew`) | ✅ télécharge Gradle 8.11.1, somme SHA-256 vérifiée, projet analysé |
 | `./gradlew assembleDebug` dans l'environnement de développement | ❌ **non exécutable** : le plugin Android Gradle 8.7.3 n'est publié que sur maven.google.com, inaccessible (refus du proxy réseau) |
@@ -296,9 +344,15 @@ du nouvel APK :
   (chargement à la demande) et absence d'à-coup ; mémoire stable en passant
   d'un système à l'autre ;
 - [ ] ISS : présente dans la vue de la Terre, sélection, maquette lisible,
-  Terre visible derrière, fiche « prévision NASA à jour » jusqu'au
-  12 novembre 2026, puis « approximative » / « indicative », et disparition
-  après le 12 décembre 2026 (sans mise à jour des données) ;
+  Terre visible derrière, fiche « Prévision NASA du 28 octobre 2026 »
+  jusqu'au 12 novembre 2026, 12 h 00 UTC, puis « Extrapolation » jusqu'au
+  19 novembre, 12 h 00 UTC, puis ISS masquée et explication dans la liste
+  « Satellites » (sans mise à jour des données ; à vérifier aussi en
+  accélérant le temps ou en changeant de date) ; heure du Fire TV correcte ;
+- [ ] fiches des lunes : ligne « Représentation » lisible à distance (Déimos,
+  lunes d'Uranus, Protée, Titan…) ; Déimos sans plage gris clair ni raccord ;
+- [ ] en vue d'un satellite, les flèches ne pivotent pas la caméra (anomalie
+  connue, voir section 4) : le confirmer sur l'appareil ;
 - [ ] Soleil à sa taille apparente en vue rapprochée et action « Soleil » ;
 - [ ] cadence (*Réglages › Afficher la cadence*) en vue de Saturne (7 lunes)
   et de l'ISS, en temps réel et en accélération ×86 400.

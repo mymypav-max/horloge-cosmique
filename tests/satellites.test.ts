@@ -1,10 +1,10 @@
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
-import { issInfo, moonInfo, moonSubtitle, planetInfo } from '../src/app/info';
+import { ISS_FORECAST_LABEL, issInfo, issUnavailableText, moonInfo, moonSubtitle, planetInfo } from '../src/app/info';
 import { parseStartupOptions } from '../src/app/startup';
-import { ISS_DATA_START_MS, ISS_DATA_STOP_MS, issState } from '../src/astro/iss';
-import { type Vec3, angleBetween, cross, dot, mulVec, normalize, sub } from '../src/astro/math';
-import { moonBodyAxes, moonPosition } from '../src/astro/moons';
+import { ISS_DATA, ISS_DATA_START_MS, ISS_DATA_STOP_MS, issState, issValidity } from '../src/astro/iss';
+import { type Vec3, angleBetween, cross, dot, mulVec, normalize, scale as scaleVec, sub } from '../src/astro/math';
+import { moonBodyAxes, moonOrbitNormal, moonPosition } from '../src/astro/moons';
 import { computeAstroState } from '../src/astro/state';
 import { CameraRig } from '../src/camera/CameraRig';
 import { type CameraPose, frameFromAxis, interpolatePoseAround, keepOutsideSphere } from '../src/camera/cameraMath';
@@ -21,7 +21,7 @@ import {
 } from '../src/representation/satellites';
 import { astroToScene } from '../src/representation/sceneFrame';
 import { PLANET_VISUAL_RADIUS } from '../src/representation/visualScale';
-import { NNBSP, formatKm, formatOrbitPeriod, formatSmallAngle, formatUtc } from '../src/ui/format';
+import { NNBSP, formatElapsed, formatKm, formatOrbitPeriod, formatSmallAngle, formatUtc, formatUtcDate } from '../src/ui/format';
 
 const norm = (v: Vec3) => Math.hypot(v[0], v[1], v[2]);
 const T = Date.UTC(2026, 9, 29, 18);
@@ -86,6 +86,54 @@ describe('représentation des satellites', () => {
       const y = mulVec(m, [0, 1, 0]);
       const z = mulVec(m, [0, 0, 1]);
       expect(dot(cross(x, y), z)).toBeCloseTo(1, 9);
+    }
+  });
+});
+
+describe('orientation des cartes des lunes', () => {
+  /** Point du maillage (sphère de Three.js) correspondant à une longitude est et une latitude de la carte. */
+  function meshPoint(lonDeg: number, latDeg: number): Vec3 {
+    const geo = new SphereGeometry(1, 72, 36);
+    const uv = geo.getAttribute('uv');
+    const pos = geo.getAttribute('position');
+    // Convention des cartes du projet : longitude 0 au centre (u = 0,5), est vers la droite, nord en haut.
+    const u = 0.5 + lonDeg / 360;
+    const v = 0.5 + latDeg / 180;
+    let best = 0;
+    let bestD = Infinity;
+    for (let k = 0; k < uv.count; k++) {
+      const d = Math.hypot(uv.getX(k) - u, uv.getY(k) - v);
+      if (d < bestD) {
+        bestD = d;
+        best = k;
+      }
+    }
+    return [pos.getX(best), pos.getY(best), pos.getZ(best)];
+  }
+
+  it('place la longitude 0 vers la planète, le nord IAU en haut et l’est dans le sens direct autour du nord, y compris pour les rotations rétrogrades', () => {
+    // Le maillage est stocké en flottants 32 bits (≈ 1e-7 près) ; une erreur d'orientation serait de 90° ou 180°.
+    const FLOAT32_RAD = 1e-6;
+    // Lunes d'Uranus et Triton : rotation rétrograde par rapport à leur pôle nord IAU (côté nord du plan invariable).
+    for (const id of MOON_IDS) {
+      const axes = moonBodyAxes(id, T);
+      const m = moonOrientation(axes.toParent, axes.north);
+      const toScene = (lon: number, lat: number) => mulVec(m, meshPoint(lon, lat));
+      expect(angleBetween(toScene(0, 0), astroToScene(axes.toParent)), id).toBeLessThan(FLOAT32_RAD);
+      expect(angleBetween(toScene(0, 90), astroToScene(axes.north)), id).toBeLessThan(FLOAT32_RAD);
+      // Longitude 90° E = nord × (direction de la longitude 0) : longitudes est (planétocentriques) de la nomenclature UAI.
+      const east = astroToScene(normalize(cross(axes.north, axes.toParent)));
+      expect(angleBetween(toScene(90, 0), east), id).toBeLessThan(FLOAT32_RAD);
+      expect(angleBetween(toScene(-90, 0), scaleVec(east, -1)), id).toBeLessThan(FLOAT32_RAD);
+      // Pôle nord IAU : du côté nord de l'écliptique (proche du plan invariable).
+      expect(axes.north[2], id).toBeGreaterThan(0);
+    }
+    // Rotation rétrograde autour du pôle nord pour les lunes d'Uranus et Triton (mouvement orbital opposé au nord).
+    for (const id of ['miranda', 'ariel', 'umbriel', 'titania', 'oberon', 'triton'] as const) {
+      expect(dot(moonOrbitNormal(id, T), moonBodyAxes(id, T).north), id).toBeLessThan(0);
+    }
+    for (const id of ['moon', 'io', 'enceladus', 'titan'] as const) {
+      expect(dot(moonOrbitNormal(id, T), moonBodyAxes(id, T).north), id).toBeGreaterThan(0);
     }
   });
 });
@@ -217,6 +265,34 @@ describe('fiches d’information', () => {
     expect(moonSubtitle('ariel')).toBe('Lune d’Uranus');
   });
 
+  it('indique pour chaque lune la qualité de sa représentation, sans mention superflue', () => {
+    const texts = (id: (typeof MOON_IDS)[number]) => moonInfo(id, state).representation;
+    for (const id of MOON_IDS) {
+      const r = texts(id);
+      expect(r.length, id).toBeGreaterThan(0);
+      expect(r.length, id).toBeLessThanOrEqual(3);
+      expect(new Set(r).size, id).toBe(r.length);
+      // Une carte photographique complète exclut toute autre réserve sur la carte.
+      if (r.includes('Carte photographique')) expect(r, id).toEqual(['Carte photographique']);
+    }
+    for (const id of ['proteus', 'nereid'] as const) {
+      expect(texts(id)).toEqual(['Aucune carte photographique disponible', 'Forme représentée par une sphère']);
+    }
+    for (const id of ['miranda', 'ariel', 'umbriel', 'titania', 'oberon', 'triton'] as const) {
+      expect(texts(id)).toEqual(['Carte partiellement reconstituée', 'Certaines régions n’ont jamais été photographiées']);
+    }
+    expect(texts('europa')).toEqual(['Carte partiellement reconstituée']);
+    expect(texts('callisto')).toEqual(['Carte partiellement reconstituée']);
+    expect(texts('titan')).toEqual(['Texture issue d’observations infrarouges', 'Représentation approximative']);
+    expect(texts('deimos')).toEqual(['Représentation approximative', 'Carte partiellement reconstituée', 'Forme représentée par une sphère']);
+    expect(texts('phobos')).toEqual(['Représentation approximative', 'Forme représentée par une sphère']);
+    for (const id of ['moon', 'io', 'ganymede', 'mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus'] as const) {
+      expect(texts(id)).toEqual(['Carte photographique']);
+    }
+    // Les fiches astronomiques sont conservées : la mention s'ajoute, elle ne remplace rien.
+    expect(moonInfo('triton', state).lines).toHaveLength(7);
+  });
+
   it('signale une position extrapolée hors de 2010–2030', () => {
     expect(moonInfo('io', computeAstroState(Date.UTC(2100, 0, 1))).note).toContain('extrapolée');
     expect(moonInfo('io', state).note).toContain('JPL Horizons');
@@ -227,8 +303,40 @@ describe('fiches d’information', () => {
     const labels = iss.lines.map((l) => l.label);
     for (const l of ['Nature', 'Altitude calculée', 'Vitesse', 'Période orbitale', 'Inclinaison', 'Éléments (époque)', 'Validité']) expect(labels).toContain(l);
     expect(iss.note).toContain('non observée en temps réel');
-    const late = issInfo(issState(ISS_DATA_STOP_MS + 3 * 86_400_000)!);
-    expect(late.lines.find((l) => l.label === 'Validité')!.value).toContain('approximative');
+  });
+
+  it('affiche la prévision NASA d’origine, et un écart mesuré par rapport à elle (pas à la station réelle)', () => {
+    expect(ISS_FORECAST_LABEL).toBe(`Prévision NASA du ${formatUtcDate(Date.parse(`${ISS_DATA.source.creationDate}Z`))}`);
+    expect(ISS_FORECAST_LABEL).toMatch(/^Prévision NASA du \d{1,2} [a-zéû]+ \d{4}$/);
+    for (const t of [ISS_DATA_START_MS, ISS_DATA_STOP_MS]) {
+      const info = issInfo(issState(t)!);
+      expect(info.lines.find((l) => l.label === 'Validité')!.value).toBe(ISS_FORECAST_LABEL);
+      expect(info.note).toContain('ajustés par le projet');
+      expect(info.note).toContain('pas avec la position réelle de la station');
+      expect(info.note).toMatch(/Écart ≤ \d km avec cette prévision/);
+    }
+  });
+
+  it('signale l’extrapolation, sans précision garantie, après expiration de la prévision', () => {
+    const minuteAfter = issInfo(issState(ISS_DATA_STOP_MS + 60_000)!);
+    expect(minuteAfter.lines.find((l) => l.label === 'Validité')!.value).toBe('Extrapolation');
+    expect(minuteAfter.lines.find((l) => l.label === 'Prévision expirée depuis')!.value).toBe('moins d’une heure');
+    expect(minuteAfter.note).toContain('manœuvre orbitale non intégrée');
+    expect(minuteAfter.note).toContain('Aucune précision n’est garantie');
+    expect(minuteAfter.note).not.toMatch(/≤ \d km/);
+    const lastDay = issInfo(issState(ISS_DATA_STOP_MS + 7 * 86_400_000)!);
+    expect(lastDay.lines.find((l) => l.label === 'Prévision expirée depuis')!.value).toBe('7 j');
+    expect(issInfo(issState(ISS_DATA_STOP_MS + 5 * 3_600_000)!).lines.find((l) => l.label === 'Prévision expirée depuis')!.value).toBe('5 h');
+    expect(issInfo(issState(ISS_DATA_START_MS - 3_600_000)!).lines.find((l) => l.label === 'Avant la prévision de')!.value).toBe('1 h');
+  });
+
+  it('explique pourquoi l’ISS est masquée (données expirées à actualiser, absentes, ou station pas encore lancée)', () => {
+    const expired = issUnavailableText(issValidity(ISS_DATA_STOP_MS + 8 * 86_400_000));
+    expect(expired.note).toContain('doivent être actualisées');
+    expect(expired.note).toContain('plus de 7 jours');
+    expect(expired.toast).toContain('à actualiser');
+    expect(issUnavailableText(issValidity(Date.UTC(2020, 0, 1))).note).toContain('aucune donnée orbitale embarquée');
+    expect(issUnavailableText(issValidity(Date.UTC(1990, 0, 1))).note).toContain('pas encore en orbite');
   });
 
   it('ajoute la taille apparente du Soleil aux fiches des planètes', () => {
@@ -245,5 +353,11 @@ describe('fiches d’information', () => {
     expect(formatKm(421_765)).toBe(`421${NNBSP}800 km`);
     expect(formatKm(9_375)).toBe(`9${NNBSP}375 km`);
     expect(formatUtc(Date.UTC(2026, 9, 28, 12))).toBe('28 octobre 2026, 12 h 00 UTC');
+    expect(formatUtcDate(Date.UTC(2026, 9, 28, 15, 3))).toBe('28 octobre 2026');
+    expect(formatUtcDate(Date.UTC(2026, 10, 1))).toBe('1er novembre 2026');
+    expect(formatElapsed(1 / 1440)).toBe('moins d’une heure');
+    expect(formatElapsed(47.9 / 24)).toBe('47 h');
+    expect(formatElapsed(2)).toBe('2 j');
+    expect(formatElapsed(7)).toBe('7 j');
   });
 });

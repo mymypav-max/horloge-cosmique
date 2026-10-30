@@ -156,6 +156,21 @@ export function formatKm(km: number): string {
 }
 
 /** Date et heure UTC : « 28 octobre 2026, 12 h 00 UTC ». */
+/** « 28 octobre 2026 » (date UTC). */
+export function formatUtcDate(ms: number): string {
+  const d = new Date(ms);
+  const day = d.getUTCDate() === 1 ? '1er' : String(d.getUTCDate());
+  return `${day} ${MONTHS[d.getUTCMonth()]} ${formatYear(d.getUTCFullYear())}`;
+}
+
+/** Durée écoulée lisible : « moins d’une heure », « 5 h » (moins de 2 jours), puis « 3 j ». */
+export function formatElapsed(days: number): string {
+  const hours = days * 24;
+  if (hours < 1) return 'moins d’une heure';
+  if (hours < 48) return `${Math.floor(hours)} h`;
+  return `${Math.floor(days)} j`;
+}
+
 export function formatUtc(ms: number): string {
   const d = new Date(ms);
   const day = d.getUTCDate() === 1 ? '1er' : String(d.getUTCDate());

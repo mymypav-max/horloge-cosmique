@@ -230,6 +230,25 @@ body {
   line-height: 1.35;
 }
 
+/* Qualité de la représentation visuelle d'une lune (carte reconstituée, forme sphérique…). */
+.info__repr {
+  margin: 0.5rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.info__repr-label {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
 /* ------------------------------------------------------ Barre d'actions */
 
 .bar {
@@ -414,6 +433,14 @@ body {
   color: var(--sim);
   font-size: 0.78rem;
   white-space: nowrap;
+}
+
+/* Explication sous la liste des satellites (ex. ISS masquée, données à actualiser). */
+.panel__note {
+  margin: 0.5rem 0.7rem 0.1rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--ink-faint);
 }
 
 /* Mode horloge : seuls l'heure et la date restent visibles. */

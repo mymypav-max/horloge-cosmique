@@ -203,13 +203,20 @@ la planète (ou le bouton portant son nom), puis à la vue générale.
 
 ## Données de l'ISS : à mettre à jour
 
-L'application ne télécharge rien. Les données de l'ISS embarquées couvrent
-du 28 octobre au 12 novembre 2026 ; ensuite la position est signalée comme
-approximative, puis indicative, et l'ISS n'est plus affichée **après le
-12 décembre 2026**. Pour la retrouver : sur un ordinateur connecté,
-`npm run data:iss`, `npm test`, `npm run build`, puis recompiler et
-réinstaller l'APK (ou laisser l'intégration continue GitHub le produire après
-un envoi sur `main`).
+L'application ne télécharge rien. Les données de l'ISS embarquées sont la
+**prévision NASA du 28 octobre 2026**, valable du 28 octobre 12 h 00 UTC au
+**12 novembre 2026, 12 h 00 UTC** (fiche : « Prévision NASA du 28 octobre
+2026 »). Pendant les 7 jours suivants, la position est une simple
+**extrapolation** (fiche : « Extrapolation », sans précision garantie) ; à
+partir du **19 novembre 2026, 12 h 00 UTC**, l'ISS est masquée (liste et
+scène) et la liste « Satellites » de la Terre indique que les données doivent
+être actualisées. L'horloge de la Fire TV fait foi : une date fausse sur
+l'appareil fausse aussi l'état affiché.
+
+Pour actualiser : sur un ordinateur connecté, `npm run data:iss` (télécharge
+la dernière prévision NASA et refait l'ajustement SGP4), `npm test`,
+`npm run build`, puis recompiler et réinstaller l'APK (ou laisser
+l'intégration continue GitHub le produire après un envoi sur `main`).
 
 ## Dépannage
 

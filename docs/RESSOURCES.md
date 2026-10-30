@@ -119,33 +119,133 @@ SHA-256 des 20 sources vérifiées) :
   Rhéa (PIA18438), Japet (PIA18436), Titan (PIA19658), et carte Voyager 2 de
   Triton (PIA18668) ;
 - dépôt `github.com/nasa/NASA-3D-Resources` (commit `11ebb4e`) : Phobos,
-  Déimos, Miranda, Ariel, Umbriel, Titania, Obéron ;
+  Déimos, Miranda, Ariel, Umbriel, Titania, Obéron — cartes 1440 × 720 du
+  JPL Solar System Simulator (fichiers de 2008, sans géoréférencement).
+  Phobos et Déimos : cartes en relief ombré **dessinées** (pour Déimos :
+  carte tirée d'images Viking et traitée à l'USGS) ; lunes d'Uranus :
+  mosaïques Voyager 2 ;
 - Lune : `moon.jpg` de Solar System Scope (CC BY 4.0), même miroir PyVista que
   les planètes.
 
 Traitements :
 
 1. toutes les cartes sont ramenées à la convention des planètes (longitude 0°
-   au centre, longitudes est vers la droite). La convention de chaque source a
-   été **vérifiée sur des repères connus** : cratère Herschel (Mimas), cratère
-   Odysseus (Téthys), bassin Valhalla (Callisto), région sombre Galileo
-   (Ganymède), hémisphère arrière sombre d'Europe, falaises de l'hémisphère
-   arrière de Dioné et Rhéa, Cassini Regio (Japet), volcan Pele (Io), cratère
-   Stickney (Phobos) et cratère Wunda (Umbriel), ces deux derniers
-   approximativement ; Titan d'après l'étiquetage de
-   la carte (360° O au bord gauche). Les cartes centrées sur 180° sont décalées
-   d'une demi-largeur. L'orientation de la carte de Triton n'a pas pu être
-   vérifiée sur un repère ;
-2. **zones jamais photographiées** (nord des lunes d'Uranus : 56 à 62 % de la
-   carte ; nord de Triton : 38 % ; lacunes de Callisto et d'Europe) : remplies
-   par la teinte moyenne de la surface connue, sans relief inventé ;
+   au centre, longitudes est vers la droite, nord IAU en haut). Les cartes
+   centrées sur 180° sont décalées d'une demi-largeur. L'orientation de
+   **chaque** carte a été vérifiée sur des repères connus (tableau
+   ci-dessous) ;
+2. **zones sans données** remplies par la teinte moyenne de la surface
+   connue, sans relief inventé, avec un fondu de quelques pixels. Part de la
+   carte remplie (marge de fondu comprise) : Miranda 57,5 %, Ariel 62,2 %,
+   Umbriel 59,6 %, Titania 63,1 %, Obéron 62,0 % (hémisphère nord, jamais
+   photographié par Voyager 2), Triton 39,6 % (idem), Déimos 18,8 % (voir
+   ci-dessous), Europe 5,0 % et Callisto 4,1 % (lacunes des mosaïques).
+   Ces zones sont signalées dans les fiches de l'application ;
 3. Titan : la carte d'albédo de surface (proche infrarouge) est teintée en
    orange et atténuée à 14 % de contraste, car en lumière visible une brume
    épaisse masque la surface ;
-4. redimensionnement en 1024 × 512 (2048 × 1024 pour la Lune), JPEG qualité 88.
+4. Déimos (version 2, consolidation) : voir ci-dessous ;
+5. redimensionnement en 1024 × 512 (2048 × 1024 pour la Lune), JPEG qualité 88.
 
 Protée et Néréide n'ont pas de carte globale publiée : elles sont affichées
-d'une couleur uniforme.
+d'une couleur uniforme (teinte choisie par le projet, pas une mesure).
+
+#### Déimos : zone non cartographiée et raccords
+
+- **Origine de la zone grise** : la carte source est une carte en relief
+  ombré dessinée d'après les images Viking. Les régions qui n'ont pas pu être
+  cartographiées à partir de ces images sont restées au fond de la carte : un
+  gris clair uniforme
+  (niveau ≈ 190, contre ≈ 120 pour la surface dessinée), sans aucune texture,
+  qui portait encore un trait de graduation et le début du libellé « 180 ».
+  Cette zone représente 16,2 % des pixels de la carte, soit environ 10,5 % de
+  la surface : latitudes de 6° S au pôle Nord, surtout sur l'hémisphère
+  opposé à Mars (18 % de cet hémisphère, contre 2,9 % de la face tournée vers
+  Mars). Avant correction, elle était affichée comme une surface claire et
+  lisse, et n'était signalée nulle part.
+- **Meilleure source recherchée (30 octobre 2026)** : la recherche n'a trouvé
+  que la même carte USGS d'après Viking, et une carte composite non
+  officielle (sans licence claire). Des observations plus récentes existent
+  (caméra HiRISE en 2009, sonde Hope des Émirats arabes unis en 2023), mais
+  aucune carte globale publiée et accessible ne les intègre. Le catalogue de
+  cartes de l'USGS accessible en ligne (dépôt Astropedia) ne contient pas de
+  mosaïque de Déimos ; les sites de l'USGS et du JPL n'étaient pas accessibles
+  depuis l'environnement de préparation (règles réseau). La carte actuelle est
+  donc conservée.
+- **Raccords de tuiles** : la mosaïque source présente quatre raccords (lignes
+  160 et 560 sur toute la largeur, colonnes 280 et 680 entre ces deux lignes),
+  avec des marches de luminosité atteignant 32 niveaux, mesurées aussi sur le
+  fond uniforme : ce sont des défauts de mosaïque, non du relief. Chaque marche
+  est mesurée le long du raccord, lissée (fenêtre de 61 pixels, 31 pour les
+  raccords verticaux) puis compensée par une rampe douce de 24 pixels de part
+  et d'autre. Marche moyenne après correction : 0,8 à 2 niveaux (contre 4 à
+  13). Aucun détail n'est ajouté ni déplacé. Le liseré sombre du méridien 180°
+  et de la dernière ligne est remplacé par la valeur des voisines.
+- **Zone non cartographiée** : détectée comme les zones lisses (écart-type
+  local < 3) et claires (> 170), refermée sur 4 pixels (graduation, chiffres),
+  en ne gardant que les grandes étendues (≥ 0,5 % de la carte, ce qui écarte
+  de petites pentes claires du relief), puis remplie par la teinte moyenne de
+  la surface dessinée (niveau 130), sans relief ni motif répété. Elle apparaît
+  comme une plage grise unie, et la fiche de Déimos indique « Carte
+  partiellement reconstituée ».
+
+#### Vérification des orientations
+
+Repères : nomenclature planétaire de l'UAI, fichiers « center points » du
+*Gazetteer of Planetary Nomenclature* de l'USGS (dépôt
+`asc-planetarynames-data`, téléchargés le 30 octobre 2026). Longitudes est
+de 0 à 360°, recoupées avec les fiches du Gazetteer (Samarkand Sulci, Encelade :
+327,5° O = 32,5° E ; Voltaire, Déimos : 3,5° O = 356,5° E ; Gertrude,
+Titania : 287,1° E). Les formations ont été superposées aux cartes dans la
+convention du projet ; une erreur d'orientation (carte inversée, décalée de
+180° ou retournée) placerait ces repères sur des terrains sans rapport.
+
+| Lune | Carte (source) | Repères utilisés | Orientation | Correction |
+|---|---|---|---|---|
+| Triton | Voyager 2, PIA18668 (NASA/JPL-Caltech/LPI) | taches sombres Akupara Maculae (27,5° S, 63° E), Zin Maculae, Viviane Macula ; terrain « cantaloup » de Bubembe Regio (18° N, 335° E) | confirmée | aucune |
+| Encelade | Cassini, PIA18435 | paires de cratères Ali Baba (56,8° N, 342,5° E) et Aladdin (62,7° N, 337,9° E), Dunyazad (41,5° N, 158° E) et Shahrazad (46,5° N, 158,4° E) ; Samad | confirmée | aucune |
+| Déimos | NASA 3D Resources (USGS, d'après Viking) | cratères Voltaire (22° N, 356,5° E) et Swift (12,5° N, 1,8° E), y compris leur position relative ; graduation « 180 » au bord de la carte source | confirmée (deux repères seulement) | aucune |
+| Miranda | NASA 3D Resources (Voyager 2) | Arden Corona (29,1° S, 73,7° E), Elsinore Corona (24,8° S, 257,1° E), Inverness Corona (66,9° S, 325,7° E, « chevron »), Verona Rupes (18,3° S, 347,8° E) | confirmée | aucune |
+| Ariel | NASA 3D Resources (Voyager 2) | Kachina (33,7° S, 246° E), Kewpie, Korrigan, Pixie et Sylph Chasmata : tous dans la zone de sillons, alors qu'une carte inversée ou décalée les placerait dans la zone floue sans sillons | confirmée (repères linéaires) | aucune |
+| Titania | NASA 3D Resources (Voyager 2) | Messina Chasmata (33,3° S, 335° E, canyon de 1 500 km), Rousillon Rupes (14,7° S, 26,5° E) | confirmée | aucune |
+| Obéron | NASA 3D Resources (Voyager 2) | cratères à fond sombre Hamlet (46,1° S, 44,4° E) et Othello (66° S, 42,9° E) | confirmée | aucune |
+| Umbriel | NASA 3D Resources (Voyager 2) | Wunda (7,9° S, 273,6° E), Vuver, Skynd | confirmée | aucune |
+| Phobos | NASA 3D Resources (relief ombré) | Stickney (1° N, 311° E) et Limtoc (cratère à l'intérieur de Stickney), Drunlo, Opik, Shklovsky | confirmée, à ±10° près (corps irrégulier projeté sur une sphère) | aucune |
+
+Les autres cartes avaient été vérifiées lors de la version 2 : cratère
+Herschel (Mimas), cratère Odysseus (Téthys), bassin Valhalla (Callisto),
+région sombre Galileo (Ganymède), hémisphère arrière sombre d'Europe,
+falaises de l'hémisphère arrière de Dioné et Rhéa, Cassini Regio (Japet),
+volcan Pele (Io), face visible de la Lune ; Titan d'après l'étiquetage de la
+carte (360° O au bord gauche).
+
+Dans l'application, un test (`tests/satellites.test.ts`) vérifie sur le
+maillage réel que la longitude 0 de chaque carte est tournée vers la planète,
+que le nord IAU est en haut et que la longitude 90° E se trouve dans le sens
+direct autour du nord, y compris pour les lunes dont la rotation est
+rétrograde par rapport à leur pôle nord IAU (lunes d'Uranus, Triton). Pour
+ces dernières, la caméra suit le sens du mouvement orbital : le pôle sud IAU
+apparaît donc en haut de l'image.
+
+#### Mentions affichées dans les fiches
+
+Chaque fiche de lune affiche, sous ses caractéristiques, une ligne
+« Représentation » limitée aux réserves qui la concernent
+(`src/data/moons.ts`) :
+
+| Lunes | Mentions |
+|---|---|
+| Lune, Io, Ganymède, Mimas, Encelade, Téthys, Dioné, Rhéa, Japet | Carte photographique |
+| Europe, Callisto | Carte partiellement reconstituée |
+| Miranda, Ariel, Umbriel, Titania, Obéron, Triton | Carte partiellement reconstituée · Certaines régions n'ont jamais été photographiées |
+| Titan | Texture issue d'observations infrarouges · Représentation approximative |
+| Phobos | Représentation approximative · Forme représentée par une sphère |
+| Déimos | Représentation approximative · Carte partiellement reconstituée · Forme représentée par une sphère |
+| Protée, Néréide | Aucune carte photographique disponible · Forme représentée par une sphère |
+
+Pour Déimos, « Certaines régions n'ont jamais été photographiées » n'est pas
+affiché : des images plus récentes que Viking existent, même si elles ne sont
+pas intégrées à une carte disponible.
 
 ### Lunes : orbites (version 2)
 

@@ -7,8 +7,12 @@
 import { eclipticCoordinates } from '../astro/ephemeris';
 import {
   ISS_DATA,
+  ISS_DATA_START_MS,
   ISS_DATA_STOP_MS,
   ISS_ELEMENTS_EPOCH_MS,
+  ISS_EXTRAPOLATION_DAYS,
+  ISS_FIRST_MODULE_LAUNCH_MS,
+  ISS_FORECAST_CREATED_MS,
   ISS_INCLINATION_DEG,
   ISS_PERIOD_MINUTES,
   type IssState,
@@ -24,9 +28,11 @@ import {
 import { sunAngularDiameterDeg } from '../astro/sun';
 import { centuriesTT } from '../astro/time';
 import type { AstroState } from '../astro/state';
-import { MOONS, type MoonId } from '../data/moons';
+import { MOONS, type MoonId, type RepresentationNote } from '../data/moons';
 import { AU_KM, PLANETS, type PlanetId } from '../data/planets';
 import {
+  capitalize,
+  formatElapsed,
   formatGeo,
   formatKm,
   formatNumber,
@@ -35,6 +41,7 @@ import {
   formatRotation,
   formatSmallAngle,
   formatUtc,
+  formatUtcDate,
 } from '../ui/format';
 import type { InfoLine } from '../ui/Overlay';
 
@@ -108,7 +115,18 @@ function diameter(id: MoonId): string {
   return `≈ ${mean} km (${a} × ${b} × ${c})`;
 }
 
-export function moonInfo(id: MoonId, state: AstroState): { lines: InfoLine[]; note: string } {
+/** Mentions affichées dans les fiches des lunes (qualité de la représentation visuelle). */
+export const REPRESENTATION_TEXT: Record<RepresentationNote, string> = {
+  photoMap: 'Carte photographique',
+  partialMap: 'Carte partiellement reconstituée',
+  unseenRegions: 'Certaines régions n’ont jamais été photographiées',
+  approximate: 'Représentation approximative',
+  noMap: 'Aucune carte photographique disponible',
+  infrared: 'Texture issue d’observations infrarouges',
+  sphere: 'Forme représentée par une sphère',
+};
+
+export function moonInfo(id: MoonId, state: AstroState): { lines: InfoLine[]; note: string; representation: string[] } {
   const moon = MOONS[id];
   const parentName = PLANETS[moon.parent].name;
   const p = state.moons[id];
@@ -135,23 +153,49 @@ export function moonInfo(id: MoonId, state: AstroState): { lines: InfoLine[]; no
   } else {
     precision = 'Position extrapolée hors de 2010–2030 : approximative.';
   }
-  return { lines, note: `${moon.description} ${precision} Taille et distance affichées non à l’échelle.` };
+  return {
+    lines,
+    note: `${moon.description} ${precision} Taille et distance affichées non à l’échelle.`,
+    representation: moon.representation.map((k) => REPRESENTATION_TEXT[k]),
+  };
 }
 
-const ISS_STATUS: Record<IssValidity['status'], string> = {
-  nominal: 'prévision NASA à jour',
-  approximate: 'approximative',
-  indicative: 'indicative',
-  unavailable: 'indisponible',
-};
+/** « prévision NASA du 28 octobre 2026 » : la source des éléments embarqués. */
+const ISS_FORECAST = `prévision NASA du ${formatUtcDate(ISS_FORECAST_CREATED_MS)}`;
+export const ISS_FORECAST_LABEL = capitalize(ISS_FORECAST);
 
+/** Statut affiché (fiche et liste des satellites). */
 export function issValidityText(v: IssValidity): string {
-  if (v.status === 'nominal') return ISS_STATUS.nominal;
-  if (v.status === 'unavailable') return ISS_STATUS.unavailable;
-  return `${ISS_STATUS[v.status]} (données à ${formatNumber(Math.ceil(v.daysOutside))} j)`;
+  if (v.status === 'nominal') return ISS_FORECAST_LABEL;
+  return v.status === 'extrapolation' ? 'Extrapolation' : 'Indisponible';
 }
+
+/** Message (bref) et explication lorsque l'ISS est masquée. */
+export function issUnavailableText(v: IssValidity): { toast: string; note: string } {
+  if (v.reason === 'beforeLaunch') {
+    return {
+      toast: 'ISS : pas encore en orbite à cette date',
+      note: `ISS : pas encore en orbite à cette date (premier module lancé le ${formatUtcDate(ISS_FIRST_MODULE_LAUNCH_MS)}).`,
+    };
+  }
+  if (v.reason === 'beforeData') {
+    return {
+      toast: 'ISS : aucune donnée orbitale pour cette date',
+      note: `ISS masquée : aucune donnée orbitale embarquée pour cette date (${ISS_FORECAST}, valable à partir du ${formatUtc(ISS_DATA_START_MS)}).`,
+    };
+  }
+  return {
+    toast: 'ISS masquée : données orbitales expirées, à actualiser',
+    note:
+      `ISS masquée : la ${ISS_FORECAST} a expiré le ${formatUtc(ISS_DATA_STOP_MS)}, ` +
+      `il y a plus de ${ISS_EXTRAPOLATION_DAYS} jours. Les données orbitales doivent être actualisées (mise à jour de l’application).`,
+  };
+}
+
+const ISS_MODEL_SCALE = 'Maquette agrandie environ 1 500 fois (envergure réelle : 109 m).';
 
 export function issInfo(state: IssState): { lines: InfoLine[]; note: string } {
+  const v = state.validity;
   const lines: InfoLine[] = [
     { label: 'Nature', value: 'station habitée (satellite artificiel)' },
     { label: 'Altitude calculée', value: `${formatNumber(state.altitudeKm, 0)} km` },
@@ -159,19 +203,21 @@ export function issInfo(state: IssState): { lines: InfoLine[]; note: string } {
     { label: 'Période orbitale', value: `${formatNumber(ISS_PERIOD_MINUTES, 1)} min` },
     { label: 'Inclinaison', value: `${formatNumber(ISS_INCLINATION_DEG, 1)}°` },
     { label: 'Éléments (époque)', value: formatUtc(ISS_ELEMENTS_EPOCH_MS) },
-    { label: 'Validité', value: issValidityText(state.validity) },
+    { label: 'Validité', value: issValidityText(v) },
   ];
-  const until = formatUtc(ISS_DATA_STOP_MS);
-  const precision =
-    state.validity.status === 'nominal'
-      ? `écart ≤ ${formatNumber(Math.ceil(ISS_DATA.fit.maxKm), 0)} km à l’éphéméride NASA (valable jusqu’au ${until})`
-      : state.validity.status === 'approximate'
-        ? 'l’écart peut atteindre quelques dizaines de kilomètres'
-        : 'la position le long de l’orbite est incertaine (centaines de kilomètres ou plus)';
-  return {
-    lines,
-    note:
-      `Position calculée par le modèle SGP4 à partir de données NASA embarquées, et non observée en temps réel : ${precision}. ` +
-      'Maquette agrandie environ 1 500 fois (envergure réelle : 109 m).',
-  };
+  if (v.status === 'extrapolation') {
+    lines.push(
+      v.beforeData
+        ? { label: 'Avant la prévision de', value: formatElapsed(v.daysOutside) }
+        : { label: 'Prévision expirée depuis', value: formatElapsed(v.daysOutside) },
+    );
+  }
+  const forecast = `${ISS_FORECAST} (valable du ${formatUtc(ISS_DATA_START_MS)} au ${formatUtc(ISS_DATA_STOP_MS)})`;
+  const note =
+    v.status === 'nominal'
+      ? `Position calculée par le modèle SGP4 à partir d’éléments ajustés par le projet sur la ${forecast}, et non observée en temps réel. ` +
+        `Écart ≤ ${formatNumber(Math.ceil(ISS_DATA.fit.maxKm), 0)} km avec cette prévision : il s’agit d’une comparaison avec la prévision, pas avec la position réelle de la station.`
+      : `Position extrapolée par le modèle SGP4 hors de la ${forecast}, et non observée en temps réel. ` +
+        'Aucune précision n’est garantie : une manœuvre orbitale non intégrée (rehaussement, évitement de débris) peut décaler la station de centaines de kilomètres ou davantage.';
+  return { lines, note: `${note} ${ISS_MODEL_SCALE}` };
 }

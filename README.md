@@ -52,11 +52,22 @@ pour l'heure qu'il est**.
   0,5° sur 2010–2030) et, pour la Lune, des formules de l'Astronomical
   Almanac. Liste « Satellites », vue d'une lune avec sa planète derrière,
   fiche en français, retour à la planète. Mercure et Vénus n'ont pas de lune.
+  Chaque fiche indique aussi la qualité de la représentation visuelle
+  (« Carte photographique », « Carte partiellement reconstituée »,
+  « Certaines régions n'ont jamais été photographiées », « Aucune carte
+  photographique disponible », « Forme représentée par une sphère »…) :
+  aucune zone inconnue n'est présentée comme une surface photographiée.
 - **ISS** (version 2) : la Station spatiale internationale, dans la vue de la
   Terre, avec son orbite et une maquette agrandie. Position calculée par le
-  modèle SGP4 à partir de données NASA embarquées (jamais téléchargées par
-  l'application), avec un état de validité affiché ; ce n'est pas une
-  position observée en temps réel.
+  modèle SGP4 à partir d'éléments orbitaux ajustés par le projet sur une
+  prévision de la NASA embarquée (jamais téléchargée par l'application) ; ce
+  ne sont pas des TLE officiels et ce n'est jamais une position observée en
+  temps réel. Pendant la période de la prévision (actuellement du 28 octobre
+  au 12 novembre 2026), la fiche affiche « Prévision NASA du 28 octobre
+  2026 » ; les 7 jours suivants, « Extrapolation », sans précision garantie
+  (une manœuvre orbitale non intégrée peut décaler la station) ; ensuite
+  l'ISS est masquée et l'application indique que ses données doivent être
+  actualisées.
 - **Taille apparente du Soleil** (version 2) : en vue rapprochée, le Soleil est
   affiché avec sa vraie taille vue de la planète (0,54° depuis la Terre,
   1,1′ depuis Neptune) ; action « Soleil » pour le montrer.
@@ -69,8 +80,8 @@ pour l'heure qu'il est**.
 | Élément | État |
 |---|---|
 | Application web (TypeScript, Vite, Three.js) | ✅ fonctionnelle, testée dans Chromium |
-| Modèle astronomique | ✅ 202 tests unitaires (143 en V1), comparé à des références indépendantes (astronomy-engine, JPL Horizons, cas de vérification SGP4 de Vallado) |
-| Vérification de bout en bout (rendu, navigation, terminateur, lunes, ISS, Soleil) | ✅ 50/50 contrôles dans Chromium (WebGL logiciel) |
+| Modèle astronomique | ✅ 213 tests unitaires (143 en V1), comparé à des références indépendantes (astronomy-engine, JPL Horizons, cas de vérification SGP4 de Vallado) |
+| Vérification de bout en bout (rendu, navigation, terminateur, lunes, ISS, Soleil) | ✅ 61/61 contrôles dans Chromium (WebGL logiciel) |
 | Projet Android (WebView) pour Fire TV | ✅ code complet, compilé et signé |
 | Compilation de l'APK avec Gradle | ✅ réussie par l'intégration continue GitHub (plugin Android 8.7.3, Gradle 8.11.1) ; APK téléchargeable dans l'onglet *Actions* |
 | Essai sur un vrai Fire TV Stick | Version 1 : installée et utilisée par l'utilisateur sur un Fire TV Stick 3e génération (Fire OS 7.7.1.7), qualité maximale, fluide (retour de l'utilisateur). Version 2 : ❌ **pas encore testée sur l'appareil** — voir [la liste des vérifications restantes](docs/TESTS.md#ce-qui-reste-à-vérifier-sur-le-fire-tv-réel) |
